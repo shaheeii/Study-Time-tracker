@@ -24,20 +24,17 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeMood, setActiveMood] = useState<AtmosphereMood>('Deep Focus');
 
-  // Load state from localStorage or initialize with demo seed data
+  // Load state from localStorage or initialize with empty array for a fresh dashboard
   const [sessions, setSessions] = useState<StudySession[]>(() => {
     const saved = localStorage.getItem('focusflow_sessions_v1');
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error('Failed to parse sessions, seeding default demo data', e);
+        console.error('Failed to parse sessions, using empty list', e);
       }
     }
-    // Automatically pre-populate gorgeous, realistic study records on first load!
-    const demoData = generateInitialMockSessions();
-    localStorage.setItem('focusflow_sessions_v1', JSON.stringify(demoData));
-    return demoData;
+    return [];
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -59,6 +56,7 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [activeTopic, setActiveTopic] = useState('');
+  const [pipTrigger, setPipTrigger] = useState(0);
 
   // Save sessions to localStorage whenever they change
   useEffect(() => {
@@ -110,6 +108,7 @@ export default function App() {
     if (settings.soundEnabled) {
       sound.playBell();
     }
+    setPipTrigger(Date.now());
     return true;
   };
 
@@ -163,6 +162,7 @@ export default function App() {
     setAccumulatedSeconds(0);
     setCurrentRunStartTime(null);
     setActiveTopic('');
+    setPipTrigger(0);
   };
 
   const resetTimer = () => {
@@ -172,6 +172,7 @@ export default function App() {
     setAccumulatedSeconds(0);
     setCurrentRunStartTime(null);
     setActiveTopic('');
+    setPipTrigger(0);
     sound.playChirp();
   };
 
@@ -265,6 +266,7 @@ export default function App() {
         activeMood={activeMood}
         themeColor={settings.themeColor}
         maximizeToTimerTab={() => setActiveTab('timer')}
+        pipTrigger={pipTrigger}
       />
     </div>
   );
