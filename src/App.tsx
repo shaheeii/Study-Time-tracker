@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import TimerCard from './components/TimerCard';
 import StatsDashboard from './components/StatsDashboard';
 import SettingsModal from './components/SettingsModal';
+import FloatingTimer from './components/FloatingTimer';
 import { StudySession, AtmosphereMood, AppSettings, StreakInfo } from './types';
 import { calculateStreak, generateInitialMockSessions, sound } from './utils';
 
@@ -53,6 +54,8 @@ export default function App() {
 
   // Active Timer States
   const [activeSeconds, setActiveSeconds] = useState(0);
+  const [accumulatedSeconds, setAccumulatedSeconds] = useState(0);
+  const [currentRunStartTime, setCurrentRunStartTime] = useState<number | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [activeTopic, setActiveTopic] = useState('');
@@ -70,21 +73,26 @@ export default function App() {
   // Central Timer Interval engine
   useEffect(() => {
     let intervalId: any = null;
-    if (isTimerRunning && !isTimerPaused) {
-      intervalId = setInterval(() => {
-        setActiveSeconds((prev) => {
-          // Metronome tick sound if enabled
-          if (settings.tickSoundEnabled) {
-            sound.playTick();
-          }
-          return prev + 1;
-        });
-      }, 1000);
+    if (isTimerRunning && !isTimerPaused && currentRunStartTime !== null) {
+      const updateTimerValue = () => {
+        const elapsedSinceStart = Math.floor((Date.now() - currentRunStartTime) / 1000);
+        setActiveSeconds(accumulatedSeconds + elapsedSinceStart);
+        // Metronome tick sound if enabled
+        if (settings.tickSoundEnabled) {
+          sound.playTick();
+        }
+      };
+
+      updateTimerValue(); // Run immediately
+
+      // Poll frequently (every 200ms) to bypass browser background tab throttling
+      // while guaranteeing that the time is computed from the system clock
+      intervalId = setInterval(updateTimerValue, 200);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isTimerRunning, isTimerPaused, settings.tickSoundEnabled]);
+  }, [isTimerRunning, isTimerPaused, currentRunStartTime, accumulatedSeconds, settings.tickSoundEnabled]);
 
   // Calculate Streak Info dynamically from sessions
   const streakInfo = calculateStreak(sessions);
@@ -95,6 +103,8 @@ export default function App() {
       return false;
     }
     setActiveSeconds(0);
+    setAccumulatedSeconds(0);
+    setCurrentRunStartTime(Date.now());
     setIsTimerRunning(true);
     setIsTimerPaused(false);
     if (settings.soundEnabled) {
@@ -104,22 +114,36 @@ export default function App() {
   };
 
   const pauseTimer = () => {
+    if (currentRunStartTime !== null) {
+      const elapsed = Math.floor((Date.now() - currentRunStartTime) / 1000);
+      const newAccumulated = accumulatedSeconds + elapsed;
+      setAccumulatedSeconds(newAccumulated);
+      setActiveSeconds(newAccumulated);
+    }
+    setCurrentRunStartTime(null);
     setIsTimerPaused(true);
     sound.playChirp();
   };
 
   const resumeTimer = () => {
+    setCurrentRunStartTime(Date.now());
     setIsTimerPaused(false);
     sound.playChirp();
   };
 
   const stopAndSaveTimer = () => {
-    if (activeSeconds >= 3) {
+    let finalSeconds = activeSeconds;
+    if (currentRunStartTime !== null) {
+      const elapsed = Math.floor((Date.now() - currentRunStartTime) / 1000);
+      finalSeconds = accumulatedSeconds + elapsed;
+    }
+
+    if (finalSeconds >= 3) {
       // Save session if at least 3 seconds
       const newSession: StudySession = {
         id: `session-${Date.now()}-${Math.random()}`,
         topic: activeTopic.trim() || 'Untitled Focus Session',
-        duration: activeSeconds,
+        duration: finalSeconds,
         timestamp: new Date().toISOString(),
         status: 'Completed',
       };
@@ -136,6 +160,8 @@ export default function App() {
     setIsTimerRunning(false);
     setIsTimerPaused(false);
     setActiveSeconds(0);
+    setAccumulatedSeconds(0);
+    setCurrentRunStartTime(null);
     setActiveTopic('');
   };
 
@@ -143,6 +169,8 @@ export default function App() {
     setIsTimerRunning(false);
     setIsTimerPaused(false);
     setActiveSeconds(0);
+    setAccumulatedSeconds(0);
+    setCurrentRunStartTime(null);
     setActiveTopic('');
     sound.playChirp();
   };
@@ -223,6 +251,19 @@ export default function App() {
         updateSettings={updateSettings}
         onPopulateMockData={handlePopulateMockData}
         onClearData={handleClearData}
+      />
+
+      {/* Floating Mini-Timer Controller Capsule Widget */}
+      <FloatingTimer
+        activeSeconds={activeSeconds}
+        isTimerRunning={isTimerRunning}
+        isTimerPaused={isTimerPaused}
+        activeTopic={activeTopic}
+        pauseTimer={pauseTimer}
+        resumeTimer={resumeTimer}
+        stopAndSaveTimer={stopAndSaveTimer}
+        activeMood={activeMood}
+        maximizeToTimerTab={() => setActiveTab('timer')}
       />
     </div>
   );
