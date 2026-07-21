@@ -17,8 +17,53 @@ interface FloatingTimerProps {
   resumeTimer: () => void;
   stopAndSaveTimer: () => void;
   activeMood: AtmosphereMood;
+  themeColor: 'blue' | 'indigo' | 'slate' | 'emerald';
   maximizeToTimerTab: () => void;
 }
+
+// Styling map dynamically reflecting each of the primary FocusFlow design themes
+const THEME_STYLES = {
+  blue: {
+    border: 'border-blue-100 hover:border-blue-300',
+    glow: 'shadow-[0_12px_30px_rgba(37,99,235,0.12)]',
+    text: 'text-blue-600',
+    btnPrimary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    btnSecondary: 'bg-blue-50/50 hover:bg-blue-50 text-blue-700 border border-blue-100/50',
+    pipActive: 'bg-blue-50 text-blue-600 border border-blue-200',
+    pipInactive: 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100',
+    accentDot: 'bg-blue-500',
+  },
+  indigo: {
+    border: 'border-indigo-100 hover:border-indigo-300',
+    glow: 'shadow-[0_12px_30px_rgba(79,70,229,0.12)]',
+    text: 'text-indigo-600',
+    btnPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+    btnSecondary: 'bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 border border-indigo-100/50',
+    pipActive: 'bg-indigo-50 text-indigo-600 border border-indigo-200',
+    pipInactive: 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100',
+    accentDot: 'bg-indigo-500',
+  },
+  emerald: {
+    border: 'border-emerald-100 hover:border-emerald-300',
+    glow: 'shadow-[0_12px_30px_rgba(5,150,105,0.12)]',
+    text: 'text-emerald-600',
+    btnPrimary: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+    btnSecondary: 'bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 border border-emerald-100/50',
+    pipActive: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
+    pipInactive: 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100',
+    accentDot: 'bg-emerald-500',
+  },
+  slate: {
+    border: 'border-slate-200 hover:border-slate-400',
+    glow: 'shadow-[0_12px_30px_rgba(71,85,105,0.12)]',
+    text: 'text-slate-800',
+    btnPrimary: 'bg-slate-800 hover:bg-slate-900 text-white',
+    btnSecondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/50',
+    pipActive: 'bg-slate-200 text-slate-800 border border-slate-300',
+    pipInactive: 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100',
+    accentDot: 'bg-slate-600',
+  },
+};
 
 export default function FloatingTimer({
   activeSeconds,
@@ -29,9 +74,17 @@ export default function FloatingTimer({
   resumeTimer,
   stopAndSaveTimer,
   activeMood,
+  themeColor,
   maximizeToTimerTab,
 }: FloatingTimerProps) {
-  const [position, setPosition] = useState({ x: window.innerWidth - 300, y: window.innerHeight - 180 });
+  // Use slightly narrower widths for cleaner look: full is 210px, minimized is 135px
+  const widthExpanded = 210;
+  const widthMinimized = 135;
+
+  const [position, setPosition] = useState({ 
+    x: window.innerWidth - widthExpanded - 24, 
+    y: window.innerHeight - 165 
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [isPipActive, setIsPipActive] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -43,12 +96,15 @@ export default function FloatingTimer({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  const currentTheme = THEME_STYLES[themeColor] || THEME_STYLES.blue;
+
   // Maintain floating position inside safe boundaries during screen resize
   useEffect(() => {
     const handleResize = () => {
       setPosition((prev) => {
-        const maxX = window.innerWidth - 280;
-        const maxY = window.innerHeight - 150;
+        const currentWidth = isMinimized ? widthMinimized : widthExpanded;
+        const maxX = window.innerWidth - currentWidth - 16;
+        const maxY = window.innerHeight - (isMinimized ? 75 : 145);
         return {
           x: Math.max(16, Math.min(prev.x, maxX)),
           y: Math.max(16, Math.min(prev.y, maxY)),
@@ -57,11 +113,11 @@ export default function FloatingTimer({
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isMinimized]);
 
-  // Drag handlers for pointer events (supports mouse and touch screens beautifully!)
+  // Drag handlers for pointer events
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Only drag when clicking the drag handle or card background, not on interactive buttons
+    // Only drag when clicking backgrounds or explicit drag handle, not interactive buttons or text-inputs
     if ((e.target as HTMLElement).closest('button')) return;
 
     setIsDragging(true);
@@ -81,8 +137,9 @@ export default function FloatingTimer({
     const newY = positionStartRef.current.y + deltaY;
 
     // Boundaries check
-    const maxX = window.innerWidth - (isMinimized ? 160 : 260);
-    const maxY = window.innerHeight - (isMinimized ? 70 : 130);
+    const currentWidth = isMinimized ? widthMinimized : widthExpanded;
+    const maxX = window.innerWidth - currentWidth - 16;
+    const maxY = window.innerHeight - (isMinimized ? 75 : 145);
 
     setPosition({
       x: Math.max(16, Math.min(newX, maxX)),
@@ -111,40 +168,40 @@ export default function FloatingTimer({
 
     // Re-draw timer onto hidden canvas
     const drawCanvas = () => {
-      // Background with sleek rounded-ish card look
-      ctx.fillStyle = '#0f172a'; // Deep dark slate
+      // Clean background
+      ctx.fillStyle = '#0f172a'; // Slate-900 background
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Mood-based accent sidebar indicator
-      const accentColors: Record<AtmosphereMood, string> = {
-        'Deep Focus': '#3b82f6',
-        'Calm Mind': '#10b981',
-        'Creative Flow': '#6366f1',
-        'Light Study': '#f59e0b',
+      // Theme-specific vertical accent indicator bar
+      const themeColorsHex = {
+        blue: '#2563eb',
+        indigo: '#4f46e5',
+        emerald: '#059669',
+        slate: '#475569',
       };
-      ctx.fillStyle = accentColors[activeMood] || '#3b82f6';
+      ctx.fillStyle = themeColorsHex[themeColor] || '#2563eb';
       ctx.fillRect(0, 0, 8, canvas.height);
 
-      // Topic Text (Trunkated if too long)
-      ctx.fillStyle = '#94a3b8'; // Cool slate text
-      ctx.font = 'bold 12px system-ui, sans-serif';
-      const displayTopic = activeTopic.trim() ? activeTopic : 'Untitled Session';
-      const truncatedTopic = displayTopic.length > 22 ? displayTopic.slice(0, 20) + '...' : displayTopic;
-      ctx.fillText(truncatedTopic.toUpperCase(), 20, 26);
+      // Topic text line
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      const displayTopic = activeTopic.trim() ? activeTopic : 'Focus Session';
+      const truncatedTopic = displayTopic.length > 20 ? displayTopic.slice(0, 18) + '...' : displayTopic;
+      ctx.fillText(truncatedTopic.toUpperCase(), 18, 24);
 
-      // Active Timer Count string
+      // Big clock
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px monospace';
-      ctx.fillText(formatSecondsToHMS(activeSeconds), 20, 68);
+      ctx.font = 'bold 32px monospace';
+      ctx.fillText(formatSecondsToHMS(activeSeconds), 18, 62);
 
-      // Vibe Indicator
-      ctx.fillStyle = '#475569';
-      ctx.font = '500 11px system-ui, sans-serif';
-      ctx.fillText(`Vibe: ${activeMood}`, 20, 92);
+      // State label
+      ctx.fillStyle = isTimerPaused ? '#f43f5e' : '#10b981';
+      ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+      ctx.fillText(isTimerPaused ? 'PAUSED' : `ACTIVE: ${activeMood.toUpperCase()}`, 18, 86);
     };
 
     drawCanvas();
-  }, [activeSeconds, activeTopic, activeMood, isTimerRunning]);
+  }, [activeSeconds, activeTopic, activeMood, isTimerRunning, isTimerPaused, themeColor]);
 
   const handleTogglePip = async () => {
     try {
@@ -161,13 +218,12 @@ export default function FloatingTimer({
         // @ts-ignore
         const stream = canvas.captureStream ? canvas.captureStream(10) : canvas.mozCaptureStream ? canvas.mozCaptureStream(10) : null;
         if (!stream) {
-          alert('Your browser does not support streaming a canvas element to Picture-in-Picture.');
+          alert('Your browser does not support streaming canvas rendering to Picture-in-Picture.');
           return;
         }
 
         video.srcObject = stream;
         
-        // Wait for video to load metadata/play
         video.onloadedmetadata = async () => {
           try {
             await video.play();
@@ -175,8 +231,8 @@ export default function FloatingTimer({
             setIsPipActive(true);
             sound.playChirp();
           } catch (err) {
-            console.error('Failed to enter Picture-in-Picture mode:', err);
-            alert('Picture-in-Picture could not start. Please ensure user interaction is active.');
+            console.error('Failed to request PiP:', err);
+            alert('Could not start PiP display. Interaction is required.');
           }
         };
       }
@@ -185,7 +241,6 @@ export default function FloatingTimer({
     }
   };
 
-  // Monitor PiP status natively
   useEffect(() => {
     const handleLeavePip = () => {
       setIsPipActive(false);
@@ -207,11 +262,10 @@ export default function FloatingTimer({
 
   return (
     <>
-      {/* Invisible HTML elements for browser Picture-in-Picture stream rendering */}
-      <canvas ref={canvasRef} width={250} height={110} className="hidden" />
+      <canvas ref={canvasRef} width={220} height={105} className="hidden" />
       <video ref={videoRef} className="hidden" playsInline muted autoPlay />
 
-      {/* Floating Widget Panel */}
+      {/* Floating Container */}
       <div
         ref={dragRef}
         onPointerDown={handlePointerDown}
@@ -222,128 +276,126 @@ export default function FloatingTimer({
           top: `${position.y}px`,
           touchAction: 'none',
         }}
-        className={`fixed z-50 rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-md shadow-2xl transition-shadow duration-300 select-none ${
-          isDragging ? 'shadow-slate-400/30 cursor-grabbing border-primary/30 ring-2 ring-primary/5' : 'shadow-slate-300/20 cursor-grab hover:border-slate-300'
-        } ${isMinimized ? 'w-[150px] p-3' : 'w-[250px] p-4.5'}`}
+        className={`fixed z-50 rounded-2xl border bg-white/95 backdrop-blur-md transition-all duration-200 select-none ${
+          isDragging 
+            ? `shadow-xl cursor-grabbing scale-[1.02] border-slate-300 ring-2 ring-slate-100` 
+            : `shadow-[0_8px_30px_rgba(0,0,0,0.06)] cursor-grab ${currentTheme.border} ${currentTheme.glow}`
+        } ${isMinimized ? 'w-[135px] p-2.5' : 'w-[210px] p-3.5'}`}
         id="floating-timer-widget"
       >
-        {/* Compact layout */}
         {isMinimized ? (
+          /* Minimized Capsule Layout */
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full text-slate-400">
               <span className="cursor-move text-slate-300 hover:text-slate-500">
-                <Move size={12} />
+                <Move size={11} />
               </span>
               <button
                 onClick={() => setIsMinimized(false)}
-                className="text-slate-400 hover:text-slate-800 text-[10px] font-bold"
-                title="Expand Floating Controller"
+                className="text-[9px] font-bold tracking-tight text-slate-400 hover:text-slate-700 hover:underline cursor-pointer"
               >
                 Expand
               </button>
             </div>
-            <span className="font-mono text-xl font-bold text-primary tracking-tight">
+            
+            <span className={`font-mono text-base font-extrabold tracking-tight tabular-nums ${currentTheme.text}`}>
               {formatSecondsToHMS(activeSeconds)}
             </span>
-            <div className="flex gap-2">
+
+            <div className="flex gap-1.5 w-full">
               <button
                 onClick={isTimerPaused ? resumeTimer : pauseTimer}
-                className="p-1 rounded-lg bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="flex-1 p-1 rounded-md bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-600 flex justify-center items-center cursor-pointer"
                 title={isTimerPaused ? 'Resume' : 'Pause'}
               >
                 {isTimerPaused ? <Play size={10} fill="currentColor" /> : <Pause size={10} />}
               </button>
               <button
                 onClick={stopAndSaveTimer}
-                className="p-1 rounded-lg bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 cursor-pointer"
+                className="flex-1 p-1 rounded-md bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 flex justify-center items-center cursor-pointer"
                 title="Save & End"
               >
-                <Square size={10} fill="currentColor" className="stroke-none" />
+                <Square size={8} fill="currentColor" className="stroke-none" />
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3.5">
-            {/* Header: Draggable Grip Indicator + Minimize button */}
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100/60">
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Move size={14} className="cursor-move animate-pulse shrink-0" />
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 truncate max-w-[120px]">
-                  {activeTopic.trim() ? activeTopic : 'Focus Session'}
+          /* Expanded Thin / Clean Mini-Card Layout */
+          <div className="flex flex-col gap-2.5">
+            {/* Header: drag bar, topic, minimize/external buttons */}
+            <div className="flex justify-between items-center pb-1.5 border-b border-slate-100">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className={`w-1.5 h-1.5 rounded-full ${isTimerPaused ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500 animate-pulse'} shrink-0`} />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate max-w-[100px]">
+                  {activeTopic.trim() ? activeTopic : 'Focusing'}
                 </span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                {/* Switch view screen toggle */}
                 <button
                   onClick={maximizeToTimerTab}
                   className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-all cursor-pointer"
-                  title="Maximize to Tab"
+                  title="Maximize to timer"
                 >
-                  <ExternalLink size={12} />
+                  <ExternalLink size={11} />
                 </button>
-                {/* Minimize block */}
                 <button
                   onClick={() => setIsMinimized(true)}
                   className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-all cursor-pointer"
-                  title="Minimize Panel"
+                  title="Minimize widget"
                 >
-                  <Minimize2 size={12} />
+                  <Minimize2 size={11} />
                 </button>
               </div>
             </div>
 
-            {/* Time string layout */}
+            {/* Time value, label, and Pip icon */}
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="font-mono text-2xl font-bold text-primary tracking-tight leading-none tabular-nums">
+                <span className={`font-mono text-xl font-black tracking-tight leading-none tabular-nums ${currentTheme.text}`}>
                   {formatSecondsToHMS(activeSeconds)}
                 </span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-300 mt-1">
-                  {isTimerPaused ? 'Session Paused' : `${activeMood} active`}
+                <span className="text-[9px] font-semibold text-slate-400 mt-1">
+                  {isTimerPaused ? 'Paused' : activeMood}
                 </span>
               </div>
 
-              {/* PiP System-Wide Button */}
+              {/* picture-in-picture activation button */}
               <button
                 onClick={handleTogglePip}
-                className={`p-2 rounded-xl border flex items-center justify-center gap-1 cursor-pointer transition-all ${
-                  isPipActive
-                    ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
-                    : 'bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-500'
+                className={`p-1.5 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                  isPipActive ? currentTheme.pipActive : currentTheme.pipInactive
                 }`}
-                title={isPipActive ? 'Close Pop-Out Timer' : 'Pop-Out Native System Timer'}
+                title={isPipActive ? 'Close Pop-Out screen' : 'Pop-Out Native System Overlay'}
               >
-                <Tv size={14} />
-                <span className="text-[9px] font-bold uppercase tracking-wide">PIP</span>
+                <Tv size={11} />
+                <span>PIP</span>
               </button>
             </div>
 
-            {/* Bottom Row Controls */}
-            <div className="flex justify-between items-center gap-2 mt-1">
-              {/* Play Pause */}
+            {/* Controls */}
+            <div className="flex justify-between items-center gap-1.5 mt-0.5">
               <button
                 onClick={isTimerPaused ? resumeTimer : pauseTimer}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${currentTheme.btnSecondary}`}
               >
                 {isTimerPaused ? (
                   <>
-                    <Play size={10} fill="currentColor" />
-                    <span>Resume</span>
+                    <Play size={9} fill="currentColor" />
+                    <span>Play</span>
                   </>
                 ) : (
                   <>
-                    <Pause size={10} />
+                    <Pause size={9} />
                     <span>Pause</span>
                   </>
                 )}
               </button>
 
-              {/* End */}
               <button
                 onClick={stopAndSaveTimer}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${currentTheme.btnPrimary}`}
               >
-                <Square size={10} fill="currentColor" className="stroke-none" />
+                <Square size={8} fill="currentColor" className="stroke-none" />
                 <span>Save</span>
               </button>
             </div>

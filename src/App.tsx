@@ -263,6 +263,7 @@ export default function App() {
         resumeTimer={resumeTimer}
         stopAndSaveTimer={stopAndSaveTimer}
         activeMood={activeMood}
+        themeColor={settings.themeColor}
         maximizeToTimerTab={() => setActiveTab('timer')}
       />
     </div>
