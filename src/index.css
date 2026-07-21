@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  /* FocusFlow Spec Colors */
+  --color-primary: #0058be;
+  --color-primary-container: #2170e4;
+  --color-on-primary: #ffffff;
+  
+  --color-secondary: #9d4300;
+  --color-secondary-container: #fd761a;
+  --color-secondary-fixed: #ffdbca;
+  
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+}
+
+/* Custom glow effects and scrollbars */
+.timer-glow {
+  text-shadow: 0 0 30px rgba(0, 88, 190, 0.1);
+}
+
+.timer-active-glow {
+  text-shadow: 0 0 45px rgba(0, 88, 190, 0.25);
+}
+
+/* Tactile shake animation for inputs */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom delicate scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
