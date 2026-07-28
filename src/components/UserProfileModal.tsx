@@ -77,20 +77,37 @@ export default function UserProfileModal({
       return;
     }
 
-    // Low secure verification: if user already has a saved password, check it.
-    // If not, or if logging in with new credentials, update and log in!
-    if (userProfile.password && userProfile.password !== loginPassword && userProfile.name.toLowerCase() === loginName.trim().toLowerCase()) {
-      setLoginError('Incorrect password for this user profile.');
-      return;
+    const normalizedName = loginName.trim();
+    const targetUserId = 'user_' + normalizedName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const dbKey = 'focusflow_users_db_v1';
+    let usersDb: Record<string, UserProfile> = {};
+    try {
+      usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+    } catch (e) {}
+
+    const existingUser = usersDb[targetUserId];
+    if (existingUser) {
+      // User account exists! Verify password!
+      if (existingUser.password && existingUser.password !== loginPassword.trim()) {
+        setLoginError('Incorrect password for this username.');
+        return;
+      }
+      // Password matches! Restore their saved profile cleanly without merging with current screen state
+      onUpdateProfile({
+        ...existingUser,
+        isLoggedIn: true,
+      });
+    } else {
+      // New account registration
+      onUpdateProfile({
+        name: normalizedName,
+        password: loginPassword.trim(),
+        isLoggedIn: true,
+        avatarUrl: '/shaheem.png',
+        bio: 'Chasing digital silence and productivity.',
+      });
     }
 
-    onUpdateProfile({
-      name: loginName.trim(),
-      password: loginPassword.trim(),
-      isLoggedIn: true,
-      avatarUrl: userProfile.avatarUrl || '/shaheem.png',
-      bio: userProfile.bio || 'Chasing digital silence and productivity.',
-    });
     setMode('view');
     onClose();
   };
@@ -102,10 +119,11 @@ export default function UserProfileModal({
       return;
     }
     onUpdateProfile({
+      ...userProfile,
       name: editName.trim(),
       bio: editBio.trim(),
       avatarUrl: editAvatarUrl,
-      password: editPassword.trim() || undefined,
+      password: editPassword.trim() || userProfile.password,
       isLoggedIn: true,
     });
     setMode('view');

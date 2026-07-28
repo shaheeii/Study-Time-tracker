@@ -28,6 +28,7 @@ Immerse yourself in background acoustics tailored for concentration:
 
 ### 👤 User Profile & Guest Mode
 - **Personalized Identity**: Log in with your name and secure password to unlock verified scholar badges.
+- **Strong Multi-User Data Isolation**: Every account gets strictly isolated storage. Your study sessions, timer progress, active topic, and custom settings are never merged or shared with other accounts or guest users on the same browser.
 - **Avatar Customization**: Choose from curated preset avatars or upload your own custom profile picture.
 - **Bio & Status Phrase**: Share your current focus goal or productivity mantra.
 

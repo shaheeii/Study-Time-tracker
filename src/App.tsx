@@ -40,11 +40,24 @@ interface SavedUserState {
   activeTab?: 'timer' | 'stats';
 }
 
-const getSavedUserState = (): SavedUserState | null => {
+const getUserId = (profile?: UserProfile | null): string => {
+  if (!profile || !profile.isLoggedIn || !profile.name || !profile.name.trim()) {
+    return 'guest';
+  }
+  return 'user_' + profile.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+};
+
+const getSavedUserState = (userId: string): SavedUserState | null => {
   try {
-    const saved = localStorage.getItem(USER_STATE_KEY);
+    const saved = localStorage.getItem(`${USER_STATE_KEY}_${userId}`);
     if (saved) {
       return JSON.parse(saved);
+    }
+    const legacy = localStorage.getItem(USER_STATE_KEY);
+    if (legacy) {
+      localStorage.setItem(`${USER_STATE_KEY}_${userId}`, legacy);
+      localStorage.removeItem(USER_STATE_KEY);
+      return JSON.parse(legacy);
     }
   } catch (e) {
     console.error('Failed to parse user state', e);
@@ -53,41 +66,6 @@ const getSavedUserState = (): SavedUserState | null => {
 };
 
 export default function App() {
-  const initialUserState = getSavedUserState();
-
-  const [activeTab, setActiveTab] = useState<'timer' | 'stats'>(
-    initialUserState?.activeTab || 'timer'
-  );
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeMood, setActiveMood] = useState<AtmosphereMood>(
-    initialUserState?.activeMood || 'Deep Focus'
-  );
-
-  // Load state from localStorage or initialize with empty array for a fresh dashboard
-  const [sessions, setSessions] = useState<StudySession[]>(() => {
-    const saved = localStorage.getItem('focusflow_sessions_v1');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse sessions, using empty list', e);
-      }
-    }
-    return [];
-  });
-
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem('focusflow_settings_v1');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse settings, using defaults', e);
-      }
-    }
-    return DEFAULT_SETTINGS;
-  });
-
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem(USER_PROFILE_KEY);
     if (saved) {
@@ -100,10 +78,70 @@ export default function App() {
     return DEFAULT_USER_PROFILE;
   });
 
+  const initialUserId = getUserId(userProfile);
+  const initialUserState = getSavedUserState(initialUserId);
+
+  const [activeTab, setActiveTab] = useState<'timer' | 'stats'>(
+    initialUserState?.activeTab || 'timer'
+  );
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeMood, setActiveMood] = useState<AtmosphereMood>(
+    initialUserState?.activeMood || 'Deep Focus'
+  );
+
+  // Load state from isolated localStorage or migrate legacy data without merging
+  const [sessions, setSessions] = useState<StudySession[]>(() => {
+    const saved = localStorage.getItem(`focusflow_sessions_v1_${initialUserId}`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse sessions, using empty list', e);
+      }
+    } else {
+      const legacy = localStorage.getItem('focusflow_sessions_v1');
+      if (legacy) {
+        try {
+          const parsed = JSON.parse(legacy);
+          localStorage.setItem(`focusflow_sessions_v1_${initialUserId}`, legacy);
+          localStorage.removeItem('focusflow_sessions_v1');
+          return parsed;
+        } catch (e) {
+          console.error('Failed to migrate legacy sessions', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const saved = localStorage.getItem(`focusflow_settings_v1_${initialUserId}`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse settings, using defaults', e);
+      }
+    } else {
+      const legacy = localStorage.getItem('focusflow_settings_v1');
+      if (legacy) {
+        try {
+          const parsed = JSON.parse(legacy);
+          localStorage.setItem(`focusflow_settings_v1_${initialUserId}`, legacy);
+          localStorage.removeItem('focusflow_settings_v1');
+          return parsed;
+        } catch (e) {
+          console.error('Failed to migrate legacy settings', e);
+        }
+      }
+    }
+    return DEFAULT_SETTINGS;
+  });
+
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileModalMode, setProfileModalMode] = useState<'login' | 'edit' | 'view'>('view');
 
-  // Active Timer States (persisted across site close/reload)
+  // Active Timer States (persisted across site close/reload per user)
   const [activeTopic, setActiveTopic] = useState(initialUserState?.activeTopic || '');
   const [isTimerRunning, setIsTimerRunning] = useState(Boolean(initialUserState?.isTimerRunning));
   const [isTimerPaused, setIsTimerPaused] = useState(Boolean(initialUserState?.isTimerPaused));
@@ -123,38 +161,28 @@ export default function App() {
   });
   const [pipTrigger, setPipTrigger] = useState(0);
 
-  // Save sessions to localStorage whenever they change
+  // Save sessions to isolated localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('focusflow_sessions_v1', JSON.stringify(sessions));
-  }, [sessions]);
+    const userId = getUserId(userProfile);
+    localStorage.setItem(`focusflow_sessions_v1_${userId}`, JSON.stringify(sessions));
+  }, [sessions, userProfile]);
 
-  // Save settings to localStorage whenever they change
+  // Save settings to isolated localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('focusflow_settings_v1', JSON.stringify(settings));
-  }, [settings]);
+    const userId = getUserId(userProfile);
+    localStorage.setItem(`focusflow_settings_v1_${userId}`, JSON.stringify(settings));
+  }, [settings, userProfile]);
 
   // Save user profile whenever it changes
   useEffect(() => {
     localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
   }, [userProfile]);
 
-  const updateUserProfile = (updated: Partial<UserProfile>) => {
-    setUserProfile((prev) => ({ ...prev, ...updated }));
-    sound.playChirp();
-  };
+  const switchUser = (newProfile: UserProfile) => {
+    const oldUserId = getUserId(userProfile);
+    const newUserId = getUserId(newProfile);
 
-  const handleLogout = () => {
-    setUserProfile((prev) => ({ ...prev, isLoggedIn: false }));
-    sound.playChirp();
-  };
-
-  const openProfileModal = (mode: 'login' | 'edit' | 'view') => {
-    setProfileModalMode(mode);
-    setIsProfileModalOpen(true);
-  };
-
-  // Auto-save active timer and user selections so running timer and data are never lost when closing the site
-  useEffect(() => {
+    // 1. Save current user's active timer & data before switching
     const stateToSave: SavedUserState = {
       activeMood,
       activeTopic,
@@ -164,8 +192,99 @@ export default function App() {
       currentRunStartTime,
       activeTab,
     };
-    localStorage.setItem(USER_STATE_KEY, JSON.stringify(stateToSave));
-  }, [activeMood, activeTopic, isTimerRunning, isTimerPaused, accumulatedSeconds, currentRunStartTime, activeTab]);
+    localStorage.setItem(`${USER_STATE_KEY}_${oldUserId}`, JSON.stringify(stateToSave));
+    localStorage.setItem(`focusflow_sessions_v1_${oldUserId}`, JSON.stringify(sessions));
+    localStorage.setItem(`focusflow_settings_v1_${oldUserId}`, JSON.stringify(settings));
+
+    // 2. If switching to a different user, load their isolated sessions without merging
+    if (oldUserId !== newUserId) {
+      let targetSessions: StudySession[] = [];
+      const savedSessions = localStorage.getItem(`focusflow_sessions_v1_${newUserId}`);
+      if (savedSessions) {
+        try { targetSessions = JSON.parse(savedSessions); } catch (e) {}
+      }
+
+      let targetSettings: AppSettings = DEFAULT_SETTINGS;
+      const savedSettings = localStorage.getItem(`focusflow_settings_v1_${newUserId}`);
+      if (savedSettings) {
+        try { targetSettings = JSON.parse(savedSettings); } catch (e) {}
+      }
+
+      let targetState: SavedUserState | null = null;
+      const savedState = localStorage.getItem(`${USER_STATE_KEY}_${newUserId}`);
+      if (savedState) {
+        try { targetState = JSON.parse(savedState); } catch (e) {}
+      }
+
+      setSessions(targetSessions);
+      setSettings(targetSettings);
+      setActiveMood(targetState?.activeMood || 'Deep Focus');
+      setActiveTopic(targetState?.activeTopic || '');
+      setIsTimerRunning(Boolean(targetState?.isTimerRunning));
+      setIsTimerPaused(Boolean(targetState?.isTimerPaused));
+      setAccumulatedSeconds(targetState?.accumulatedSeconds || 0);
+      setCurrentRunStartTime(targetState?.currentRunStartTime ?? null);
+
+      if (targetState?.isTimerRunning) {
+        if (targetState?.isTimerPaused || !targetState?.currentRunStartTime) {
+          setActiveSeconds(targetState.accumulatedSeconds || 0);
+        } else {
+          const elapsed = Math.floor((Date.now() - targetState.currentRunStartTime) / 1000);
+          setActiveSeconds((targetState.accumulatedSeconds || 0) + Math.max(0, elapsed));
+        }
+      } else {
+        setActiveSeconds(targetState?.accumulatedSeconds || 0);
+      }
+    }
+
+    // 3. Update active profile and register in users database if logged in
+    setUserProfile(newProfile);
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(newProfile));
+    if (newProfile.isLoggedIn && newProfile.name) {
+      const dbKey = 'focusflow_users_db_v1';
+      let usersDb: Record<string, UserProfile> = {};
+      try {
+        usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+      } catch (e) {}
+      usersDb[newUserId] = newProfile;
+      localStorage.setItem(dbKey, JSON.stringify(usersDb));
+    }
+
+    sound.playChirp();
+  };
+
+  const updateUserProfile = (updated: Partial<UserProfile>) => {
+    const newProfile = { ...userProfile, ...updated };
+    switchUser(newProfile);
+  };
+
+  const handleLogout = () => {
+    const guestProfile: UserProfile = {
+      ...DEFAULT_USER_PROFILE,
+      isLoggedIn: false,
+    };
+    switchUser(guestProfile);
+  };
+
+  const openProfileModal = (mode: 'login' | 'edit' | 'view') => {
+    setProfileModalMode(mode);
+    setIsProfileModalOpen(true);
+  };
+
+  // Auto-save active timer and user selections strictly isolated by user ID
+  useEffect(() => {
+    const userId = getUserId(userProfile);
+    const stateToSave: SavedUserState = {
+      activeMood,
+      activeTopic,
+      isTimerRunning,
+      isTimerPaused,
+      accumulatedSeconds,
+      currentRunStartTime,
+      activeTab,
+    };
+    localStorage.setItem(`${USER_STATE_KEY}_${userId}`, JSON.stringify(stateToSave));
+  }, [activeMood, activeTopic, isTimerRunning, isTimerPaused, accumulatedSeconds, currentRunStartTime, activeTab, userProfile]);
 
   // Central Timer Interval engine
   useEffect(() => {
@@ -285,11 +404,12 @@ export default function App() {
   };
 
   const handleClearData = () => {
+    const userId = getUserId(userProfile);
     setSessions([]);
     setSettings(DEFAULT_SETTINGS);
-    localStorage.removeItem('focusflow_sessions_v1');
-    localStorage.removeItem('focusflow_settings_v1');
-    localStorage.removeItem(USER_STATE_KEY);
+    localStorage.removeItem(`focusflow_sessions_v1_${userId}`);
+    localStorage.removeItem(`focusflow_settings_v1_${userId}`);
+    localStorage.removeItem(`${USER_STATE_KEY}_${userId}`);
     setIsTimerRunning(false);
     setIsTimerPaused(false);
     setActiveSeconds(0);
