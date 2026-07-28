@@ -19,10 +19,40 @@ const DEFAULT_SETTINGS: AppSettings = {
   themeColor: 'blue',
 };
 
+const USER_STATE_KEY = 'focusflow_user_state_v1';
+
+interface SavedUserState {
+  activeMood?: AtmosphereMood;
+  activeTopic?: string;
+  isTimerRunning?: boolean;
+  isTimerPaused?: boolean;
+  accumulatedSeconds?: number;
+  currentRunStartTime?: number | null;
+  activeTab?: 'timer' | 'stats';
+}
+
+const getSavedUserState = (): SavedUserState | null => {
+  try {
+    const saved = localStorage.getItem(USER_STATE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to parse user state', e);
+  }
+  return null;
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'timer' | 'stats'>('timer');
+  const initialUserState = getSavedUserState();
+
+  const [activeTab, setActiveTab] = useState<'timer' | 'stats'>(
+    initialUserState?.activeTab || 'timer'
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeMood, setActiveMood] = useState<AtmosphereMood>('Deep Focus');
+  const [activeMood, setActiveMood] = useState<AtmosphereMood>(
+    initialUserState?.activeMood || 'Deep Focus'
+  );
 
   // Load state from localStorage or initialize with empty array for a fresh dashboard
   const [sessions, setSessions] = useState<StudySession[]>(() => {
@@ -49,13 +79,24 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
-  // Active Timer States
-  const [activeSeconds, setActiveSeconds] = useState(0);
-  const [accumulatedSeconds, setAccumulatedSeconds] = useState(0);
-  const [currentRunStartTime, setCurrentRunStartTime] = useState<number | null>(null);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [isTimerPaused, setIsTimerPaused] = useState(false);
-  const [activeTopic, setActiveTopic] = useState('');
+  // Active Timer States (persisted across site close/reload)
+  const [activeTopic, setActiveTopic] = useState(initialUserState?.activeTopic || '');
+  const [isTimerRunning, setIsTimerRunning] = useState(Boolean(initialUserState?.isTimerRunning));
+  const [isTimerPaused, setIsTimerPaused] = useState(Boolean(initialUserState?.isTimerPaused));
+  const [accumulatedSeconds, setAccumulatedSeconds] = useState(initialUserState?.accumulatedSeconds || 0);
+  const [currentRunStartTime, setCurrentRunStartTime] = useState<number | null>(
+    initialUserState?.currentRunStartTime ?? null
+  );
+  const [activeSeconds, setActiveSeconds] = useState(() => {
+    if (initialUserState?.isTimerRunning) {
+      if (initialUserState?.isTimerPaused || !initialUserState?.currentRunStartTime) {
+        return initialUserState.accumulatedSeconds || 0;
+      }
+      const elapsed = Math.floor((Date.now() - initialUserState.currentRunStartTime) / 1000);
+      return (initialUserState.accumulatedSeconds || 0) + Math.max(0, elapsed);
+    }
+    return 0;
+  });
   const [pipTrigger, setPipTrigger] = useState(0);
 
   // Save sessions to localStorage whenever they change
@@ -67,6 +108,20 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('focusflow_settings_v1', JSON.stringify(settings));
   }, [settings]);
+
+  // Auto-save active timer and user selections so running timer and data are never lost when closing the site
+  useEffect(() => {
+    const stateToSave: SavedUserState = {
+      activeMood,
+      activeTopic,
+      isTimerRunning,
+      isTimerPaused,
+      accumulatedSeconds,
+      currentRunStartTime,
+      activeTab,
+    };
+    localStorage.setItem(USER_STATE_KEY, JSON.stringify(stateToSave));
+  }, [activeMood, activeTopic, isTimerRunning, isTimerPaused, accumulatedSeconds, currentRunStartTime, activeTab]);
 
   // Central Timer Interval engine
   useEffect(() => {
@@ -190,6 +245,14 @@ export default function App() {
     setSettings(DEFAULT_SETTINGS);
     localStorage.removeItem('focusflow_sessions_v1');
     localStorage.removeItem('focusflow_settings_v1');
+    localStorage.removeItem(USER_STATE_KEY);
+    setIsTimerRunning(false);
+    setIsTimerPaused(false);
+    setActiveSeconds(0);
+    setAccumulatedSeconds(0);
+    setCurrentRunStartTime(null);
+    setActiveTopic('');
+    setPipTrigger(0);
   };
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
