@@ -5,46 +5,57 @@
 
 import React, { useState } from 'react';
 import { Clock, BarChart2, Settings, User } from 'lucide-react';
+import { UserProfile } from '../types';
 
 interface NavbarProps {
   activeTab: 'timer' | 'stats';
   setActiveTab: (tab: 'timer' | 'stats') => void;
   openSettings: () => void;
+  userProfile?: UserProfile;
+  onOpenProfileModal?: (mode: 'login' | 'edit' | 'view') => void;
 }
 
-export default function Navbar({ activeTab, setActiveTab, openSettings }: NavbarProps) {
+export default function Navbar({ activeTab, setActiveTab, openSettings, userProfile, onOpenProfileModal }: NavbarProps) {
   const [imgError, setImgError] = useState(false);
+
+  const displayAvatar = userProfile?.avatarUrl || '/shaheem.png';
+  const displayName = userProfile?.isLoggedIn ? userProfile.name : 'FocusFlow';
+  const displaySubtitle = userProfile?.isLoggedIn ? 'Focus Scholar' : 'Digital Silence';
 
   return (
     <>
       {/* Desktop Left Sidebar Navigation */}
       <nav className="hidden md:flex flex-col border-r border-slate-100 h-screen fixed left-0 top-0 w-64 bg-white/90 backdrop-blur-md z-40 p-6 justify-between">
         <div className="flex flex-col gap-8">
-          {/* Brand Logo & Title */}
-          <div className="flex items-center gap-3.5 px-2 py-4">
-            <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-primary/20 bg-slate-50 flex items-center justify-center shrink-0 shadow-sm">
+          {/* Brand Logo & Title - Clickable for Profile */}
+          <div 
+            onClick={() => onOpenProfileModal ? onOpenProfileModal(userProfile?.isLoggedIn ? 'view' : 'login') : null}
+            className="flex items-center gap-3.5 px-2 py-3 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all duration-200 group"
+            title="Click to view/edit User Profile"
+          >
+            <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-primary/20 bg-slate-50 flex items-center justify-center shrink-0 shadow-sm group-hover:border-primary transition-colors">
               {!imgError ? (
                 <img
-                  src="/shaheem.png"
-                  alt="Shaheem Logo"
+                  src={displayAvatar}
+                  alt={displayName}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                   onError={() => setImgError(true)}
                 />
               ) : (
                 <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg font-sans">
-                  SF
+                  {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
               {/* Soft online indicator */}
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 ${userProfile?.isLoggedIn ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white rounded-full`}></span>
             </div>
-            <div className="flex flex-col">
-              <h1 className="font-sans text-lg font-bold text-slate-900 tracking-tight leading-tight">
-                FocusFlow
+            <div className="flex flex-col overflow-hidden">
+              <h1 className="font-sans text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+                {displayName}
               </h1>
-              <p className="text-slate-400 text-xs font-medium tracking-wide">
-                Digital Silence
+              <p className="text-slate-400 text-xs font-medium tracking-wide truncate flex items-center gap-1">
+                <span>{displaySubtitle}</span>
               </p>
             </div>
           </div>
@@ -104,25 +115,35 @@ export default function Navbar({ activeTab, setActiveTab, openSettings }: Navbar
 
       {/* Top App Bar (Mobile Only) */}
       <header className="md:hidden flex justify-between items-center px-6 h-16 w-full bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
-        <div className="flex items-center gap-2.5">
+        <div 
+          onClick={() => onOpenProfileModal ? onOpenProfileModal(userProfile?.isLoggedIn ? 'view' : 'login') : null}
+          className="flex items-center gap-2.5 cursor-pointer"
+        >
           <div className="relative w-8 h-8 rounded-full overflow-hidden border border-primary/20 bg-slate-100 flex items-center justify-center shrink-0">
             {!imgError ? (
               <img
-                src="/shaheem.png"
-                alt="Shaheem Logo"
+                src={displayAvatar}
+                alt={displayName}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
                 onError={() => setImgError(true)}
               />
             ) : (
-              <span className="text-primary font-bold text-xs">SF</span>
+              <span className="text-primary font-bold text-xs">{displayName.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          <h1 className="font-sans text-md font-bold text-slate-900 tracking-tight">
-            FocusFlow
+          <h1 className="font-sans text-md font-bold text-slate-900 tracking-tight truncate max-w-[150px]">
+            {displayName}
           </h1>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => onOpenProfileModal ? onOpenProfileModal('view') : null}
+            className="p-2 text-slate-500 hover:text-primary active:scale-95 transition-all duration-150 rounded-full hover:bg-slate-50"
+            title="User Profile"
+          >
+            <User size={18} className="stroke-[1.8px]" />
+          </button>
           <button
             onClick={openSettings}
             className="p-2 text-slate-500 hover:text-primary active:scale-95 transition-all duration-150 rounded-full hover:bg-slate-50"

@@ -4,17 +4,19 @@
  */
 
 import React, { useState } from 'react';
-import { Download, Search, Award, TrendingUp, Calendar, Zap, Flame, BarChart2, BookOpen, Trash2 } from 'lucide-react';
-import { StudySession, StreakInfo } from '../types';
+import { Download, Search, Award, TrendingUp, Calendar, Zap, Flame, BarChart2, BookOpen, Trash2, User, Edit3, Camera } from 'lucide-react';
+import { StudySession, StreakInfo, UserProfile } from '../types';
 import { get7DayActivity, formatSecondsToHM, formatSecondsToHMS } from '../utils';
 
 interface StatsDashboardProps {
   sessions: StudySession[];
   streakInfo: StreakInfo;
   deleteSession: (id: string) => void;
+  userProfile: UserProfile;
+  onOpenProfileModal: (mode: 'login' | 'edit' | 'view') => void;
 }
 
-export default function StatsDashboard({ sessions, streakInfo, deleteSession }: StatsDashboardProps) {
+export default function StatsDashboard({ sessions, streakInfo, deleteSession, userProfile, onOpenProfileModal }: StatsDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const completedSessions = sessions.filter((s) => s.status === 'Completed');
@@ -88,6 +90,73 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession }: 
         <p className="font-sans text-sm text-slate-400">
           Your progress towards digital clarity.
         </p>
+      </section>
+
+      {/* User Profile Overview Card - Minimal Look */}
+      <section className="bg-white rounded-3xl p-5 md:p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
+        <div className="flex items-center gap-4">
+          <div
+            className="relative group cursor-pointer shrink-0"
+            onClick={() => onOpenProfileModal('edit')}
+            title="Click to edit avatar"
+          >
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+              <img
+                src={userProfile.avatarUrl || '/shaheem.png'}
+                alt={userProfile.name}
+                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+              />
+            </div>
+            <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera size={14} className="text-white" />
+            </div>
+            {userProfile.isLoggedIn && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" title="Logged In"></span>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h3 className="font-sans text-base md:text-lg font-bold text-slate-900 tracking-tight">
+                {userProfile.name || 'Focus Scholar'}
+              </h3>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${userProfile.isLoggedIn ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+                {userProfile.isLoggedIn ? 'Verified' : 'Guest'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 line-clamp-1 max-w-sm mt-0.5">
+              {userProfile.bio || 'Chasing digital silence and productivity.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Minimal Action Buttons */}
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-slate-100">
+          <button
+            onClick={() => onOpenProfileModal('edit')}
+            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+          >
+            <Edit3 size={13} />
+            <span>Edit</span>
+          </button>
+          {!userProfile.isLoggedIn ? (
+            <button
+              onClick={() => onOpenProfileModal('login')}
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+            >
+              <User size={13} />
+              <span>Log In</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onOpenProfileModal('view')}
+              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 hover:text-slate-900 transition-all"
+              title="Account Details"
+            >
+              <User size={14} />
+            </button>
+          )}
+        </div>
       </section>
 
       {/* Bento Summary Grid */}

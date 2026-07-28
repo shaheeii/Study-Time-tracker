@@ -9,7 +9,8 @@ import TimerCard from './components/TimerCard';
 import StatsDashboard from './components/StatsDashboard';
 import SettingsModal from './components/SettingsModal';
 import FloatingTimer from './components/FloatingTimer';
-import { StudySession, AtmosphereMood, AppSettings, StreakInfo } from './types';
+import UserProfileModal from './components/UserProfileModal';
+import { StudySession, AtmosphereMood, AppSettings, StreakInfo, UserProfile } from './types';
 import { calculateStreak, generateInitialMockSessions, sound } from './utils';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -17,6 +18,14 @@ const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   tickSoundEnabled: false,
   themeColor: 'blue',
+};
+
+const USER_PROFILE_KEY = 'focusflow_user_profile_v1';
+const DEFAULT_USER_PROFILE: UserProfile = {
+  name: 'Focus Scholar',
+  avatarUrl: '/shaheem.png',
+  bio: 'Chasing digital silence and productivity.',
+  isLoggedIn: false,
 };
 
 const USER_STATE_KEY = 'focusflow_user_state_v1';
@@ -79,6 +88,21 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem(USER_PROFILE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse user profile', e);
+      }
+    }
+    return DEFAULT_USER_PROFILE;
+  });
+
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalMode, setProfileModalMode] = useState<'login' | 'edit' | 'view'>('view');
+
   // Active Timer States (persisted across site close/reload)
   const [activeTopic, setActiveTopic] = useState(initialUserState?.activeTopic || '');
   const [isTimerRunning, setIsTimerRunning] = useState(Boolean(initialUserState?.isTimerRunning));
@@ -108,6 +132,26 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('focusflow_settings_v1', JSON.stringify(settings));
   }, [settings]);
+
+  // Save user profile whenever it changes
+  useEffect(() => {
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+  }, [userProfile]);
+
+  const updateUserProfile = (updated: Partial<UserProfile>) => {
+    setUserProfile((prev) => ({ ...prev, ...updated }));
+    sound.playChirp();
+  };
+
+  const handleLogout = () => {
+    setUserProfile((prev) => ({ ...prev, isLoggedIn: false }));
+    sound.playChirp();
+  };
+
+  const openProfileModal = (mode: 'login' | 'edit' | 'view') => {
+    setProfileModalMode(mode);
+    setIsProfileModalOpen(true);
+  };
 
   // Auto-save active timer and user selections so running timer and data are never lost when closing the site
   useEffect(() => {
@@ -275,6 +319,8 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         openSettings={() => setIsSettingsOpen(true)}
+        userProfile={userProfile}
+        onOpenProfileModal={openProfileModal}
       />
 
       {/* Main Container Stage */}
@@ -303,8 +349,15 @@ export default function App() {
             sessions={sessions}
             streakInfo={streakInfo}
             deleteSession={deleteSession}
+            userProfile={userProfile}
+            onOpenProfileModal={openProfileModal}
           />
         )}
+
+        {/* Copyright Footer */}
+        <footer className="w-full pt-12 pb-4 mt-auto text-center text-xs font-medium text-slate-400">
+          Shaheem - All right reserved 2026
+        </footer>
       </main>
 
       {/* Settings Panel Backdrop Slider */}
@@ -315,6 +368,16 @@ export default function App() {
         updateSettings={updateSettings}
         onPopulateMockData={handlePopulateMockData}
         onClearData={handleClearData}
+      />
+
+      {/* User Profile Login / Edit Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userProfile={userProfile}
+        onUpdateProfile={updateUserProfile}
+        onLogout={handleLogout}
+        initialMode={profileModalMode}
       />
 
       {/* Floating Mini-Timer Controller Capsule Widget */}

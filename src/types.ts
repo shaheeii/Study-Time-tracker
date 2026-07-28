@@ -30,3 +30,11 @@ export interface Quote {
   text: string;
   author: string;
 }
+
+export interface UserProfile {
+  name: string;
+  password?: string;
+  avatarUrl: string;
+  bio: string;
+  isLoggedIn: boolean;
+}
