@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Camera, Upload, Check, X, LogOut, Edit3, Shield, Smile, AlertCircle, Sparkles, CheckCircle2, XCircle, UserCheck } from 'lucide-react';
+import { User, Lock, Camera, Upload, Check, X, LogOut, Edit3, Shield, Smile, AlertCircle, Sparkles, CheckCircle2, XCircle, UserCheck, Mail } from 'lucide-react';
 import { UserProfile } from '../types';
 import { recordLoginEvent } from '../utils';
 
@@ -40,11 +40,13 @@ export default function UserProfileModal({
   
   // Login form state
   const [loginName, setLoginName] = useState(userProfile.name || '');
+  const [loginEmail, setLoginEmail] = useState(userProfile.email || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
   // Edit form state
   const [editName, setEditName] = useState(userProfile.name);
+  const [editEmail, setEditEmail] = useState(userProfile.email || '');
   const [editBio, setEditBio] = useState(userProfile.bio || '');
   const [editAvatarUrl, setEditAvatarUrl] = useState(userProfile.avatarUrl);
   const [editPassword, setEditPassword] = useState(userProfile.password || '');
@@ -57,10 +59,12 @@ export default function UserProfileModal({
     if (isOpen) {
       setMode(userProfile.isLoggedIn ? initialMode : 'login');
       setLoginName(userProfile.isLoggedIn ? userProfile.name || '' : '');
+      setLoginEmail(userProfile.isLoggedIn ? userProfile.email || '' : '');
       setLoginPassword('');
       setLoginError('');
       setEditError('');
       setEditName(userProfile.name || '');
+      setEditEmail(userProfile.email || '');
       setEditBio(userProfile.bio || 'Chasing digital silence and productivity.');
       setEditAvatarUrl(userProfile.avatarUrl || '/shaheem.png');
       setEditPassword(userProfile.password || '');
@@ -69,12 +73,14 @@ export default function UserProfileModal({
 
   if (!isOpen) return null;
 
-  // Real-time unique username & User ID availability checker
-  const checkUsernameAvailability = (nameInput: string, excludeKey?: string) => {
-    const clean = nameInput.trim();
-    if (!clean) return { status: 'empty' as const, targetUserId: '', message: '' };
+  // Real-time unique username & Email availability checker
+  const checkUsernameAvailability = (nameInput: string, emailInput?: string, excludeKey?: string) => {
+    const cleanName = nameInput.trim();
+    const cleanEmail = (emailInput || '').trim().toLowerCase();
 
-    const targetUserId = 'user_' + clean.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (!cleanName && !cleanEmail) return { status: 'empty' as const, targetUserId: '', message: '' };
+
+    const targetUserId = 'user_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const dbKey = 'focusflow_users_db_v1';
     let usersDb: Record<string, UserProfile> = {};
     try {
@@ -83,9 +89,11 @@ export default function UserProfileModal({
 
     const matchedKey = Object.keys(usersDb).find((key) => {
       if (excludeKey && key === excludeKey) return false;
-      if (key === targetUserId) return true;
+      if (cleanName && key === targetUserId) return true;
       const u = usersDb[key];
-      return Boolean(u.name && u.name.toLowerCase().trim() === clean.toLowerCase());
+      const nameMatch = Boolean(cleanName && u.name && u.name.toLowerCase().trim() === cleanName.toLowerCase());
+      const emailMatch = Boolean(cleanEmail && u.email && u.email.toLowerCase().trim() === cleanEmail);
+      return nameMatch || emailMatch;
     });
 
     if (matchedKey) {
@@ -109,6 +117,8 @@ export default function UserProfileModal({
     setLoginError('');
 
     const normalizedName = loginName.trim();
+    const normalizedEmail = loginEmail.trim().toLowerCase();
+
     if (!normalizedName) {
       setLoginError('Please enter a username.');
       return;
@@ -132,36 +142,60 @@ export default function UserProfileModal({
       usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
     } catch (e) {}
 
-    // Check if account already exists by key or case-insensitive name match
+    // Check if account already exists by key, case-insensitive username, or email
     const matchedKey = Object.keys(usersDb).find((key) => {
       if (key === targetUserId) return true;
       const u = usersDb[key];
-      return Boolean(u.name && u.name.toLowerCase().trim() === normalizedName.toLowerCase());
+      const nameMatch = Boolean(u.name && u.name.toLowerCase().trim() === normalizedName.toLowerCase());
+      const emailMatch = Boolean(normalizedEmail && u.email && u.email.toLowerCase().trim() === normalizedEmail);
+      return nameMatch || emailMatch;
     });
 
     if (matchedKey) {
       const existingUser = usersDb[matchedKey];
-      // Account exists, verify password
+      // Account exists, verify password strictly
       if (existingUser.password && existingUser.password !== cleanPassword) {
-        recordLoginEvent(matchedKey, normalizedName, 'Failed', 'Incorrect password');
-        setLoginError(`Incorrect password for username "${normalizedName}".`);
+        recordLoginEvent(matchedKey, normalizedName, 'Failed', 'Incorrect password for registered username');
+        setLoginError(`Username "${existingUser.name}" belongs to a registered user. Incorrect password. Each username belongs to exactly one user account.`);
         return;
       }
+
       // Password correct! Log in as existing user
       recordLoginEvent(matchedKey, normalizedName, 'Success');
       const updatedUser: UserProfile = {
         ...existingUser,
+        email: normalizedEmail || existingUser.email,
         isLoggedIn: true,
         lastLoginAt: new Date().toISOString(),
         loginCount: (existingUser.loginCount || 0) + 1,
       };
       onUpdateProfile(updatedUser);
     } else {
-      // New user account creation
+      // Registering new account: Check if username or email is taken by any other user
+      const nameTaken = Object.values(usersDb).some(
+        (u) => u.name && u.name.toLowerCase().trim() === normalizedName.toLowerCase()
+      );
+      if (nameTaken) {
+        setLoginError(`Username "${normalizedName}" is already registered to another user. Each username can only belong to one user.`);
+        return;
+      }
+
+      if (normalizedEmail) {
+        const emailTaken = Object.values(usersDb).some(
+          (u) => u.email && u.email.toLowerCase().trim() === normalizedEmail
+        );
+        if (emailTaken) {
+          setLoginError(`Email address "${normalizedEmail}" is already registered to another user account.`);
+          return;
+        }
+      }
+
+      // Safe to create new unique user account
       recordLoginEvent(targetUserId, normalizedName, 'Success');
       const isFirstAdmin = normalizedName.toLowerCase() === 'admin' || normalizedName.toLowerCase() === 'shaheem';
       const newUser: UserProfile = {
         name: normalizedName,
+        email: normalizedEmail || undefined,
         password: cleanPassword,
         isLoggedIn: true,
         avatarUrl: '/shaheem.png',
@@ -183,12 +217,14 @@ export default function UserProfileModal({
     setEditError('');
 
     const cleanName = editName.trim();
+    const cleanEmail = editEmail.trim().toLowerCase();
+    const cleanPassword = editPassword.trim();
+
     if (!cleanName) {
       setEditError('Username cannot be empty.');
       return;
     }
 
-    const cleanPassword = editPassword.trim();
     if (!cleanPassword) {
       setEditError('Password is required.');
       return;
@@ -208,19 +244,33 @@ export default function UserProfileModal({
     const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
     const newUserId = 'user_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
-    if (newUserId !== currentUserId) {
-      // Check if new username is already taken by another account
-      const isTaken = Object.keys(usersDb).some((key) => {
+    // Check username conflict with other users
+    const usernameTaken = Object.keys(usersDb).some((key) => {
+      if (key === currentUserId) return false;
+      const u = usersDb[key];
+      return key === newUserId || Boolean(u.name && u.name.toLowerCase().trim() === cleanName.toLowerCase());
+    });
+
+    if (usernameTaken) {
+      setEditError(`The username "${cleanName}" is already taken by another user account. Each username can only belong to one user.`);
+      return;
+    }
+
+    // Check email conflict with other users
+    if (cleanEmail) {
+      const emailTaken = Object.keys(usersDb).some((key) => {
         if (key === currentUserId) return false;
         const u = usersDb[key];
-        return key === newUserId || Boolean(u.name && u.name.toLowerCase().trim() === cleanName.toLowerCase());
+        return Boolean(u.email && u.email.toLowerCase().trim() === cleanEmail);
       });
 
-      if (isTaken) {
-        setEditError(`The username "${cleanName}" is already taken. Please choose a different username.`);
+      if (emailTaken) {
+        setEditError(`The email "${cleanEmail}" is already registered to another user account.`);
         return;
       }
+    }
 
+    if (newUserId !== currentUserId) {
       // Migrate existing user sessions, settings, and state so user data is never lost
       const oldSessions = localStorage.getItem(`focusflow_sessions_v1_${currentUserId}`);
       if (oldSessions) {
@@ -248,6 +298,7 @@ export default function UserProfileModal({
     onUpdateProfile({
       ...userProfile,
       name: cleanName,
+      email: cleanEmail || undefined,
       bio: editBio.trim(),
       avatarUrl: editAvatarUrl,
       password: cleanPassword,
@@ -339,7 +390,7 @@ export default function UserProfileModal({
                     type="text"
                     value={loginName}
                     onChange={(e) => setLoginName(e.target.value)}
-                    placeholder="Enter your username..."
+                    placeholder="Enter your unique username..."
                     required
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
@@ -347,7 +398,7 @@ export default function UserProfileModal({
 
                 {/* Real-time Username ID Availability Indicator */}
                 {loginName.trim().length > 0 && (() => {
-                  const check = checkUsernameAvailability(loginName);
+                  const check = checkUsernameAvailability(loginName, loginEmail);
                   if (check.status === 'taken') {
                     return (
                       <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium animate-fade-in">
@@ -359,11 +410,28 @@ export default function UserProfileModal({
                     return (
                       <div className="flex items-center gap-1.5 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-[11px] text-indigo-700 dark:text-indigo-300 font-medium animate-fade-in">
                         <Sparkles size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
-                        <span>Username Available! New unique account will be registered.</span>
+                        <span>Username Available! New unique user account will be created.</span>
                       </div>
                     );
                   }
                 })()}
+              </div>
+
+              {/* Email Input Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span>Email Address <span className="text-[10px] text-slate-400 font-normal uppercase">(Optional)</span></span>
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Enter email address..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -384,7 +452,7 @@ export default function UserProfileModal({
                   />
                 </div>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                  Usernames are unique. If first time, an account will be created with your password.
+                  Usernames are strictly unique. Each username can belong to only one user account.
                 </p>
               </div>
 
@@ -413,7 +481,13 @@ export default function UserProfileModal({
                   <span>{userProfile.name}</span>
                   <Sparkles size={16} className="text-amber-500 fill-amber-500" />
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] leading-relaxed mx-auto">
+                {userProfile.email && (
+                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+                    <Mail size={12} className="text-slate-400" />
+                    <span>{userProfile.email}</span>
+                  </p>
+                )}
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] leading-relaxed mx-auto mt-0.5">
                   {userProfile.bio || 'Chasing digital silence and productivity.'}
                 </p>
               </div>
@@ -563,12 +637,12 @@ export default function UserProfileModal({
                 {/* Real-time username availability check in edit mode */}
                 {editName.trim().length > 0 && (() => {
                   const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
-                  const check = checkUsernameAvailability(editName, currentUserId);
+                  const check = checkUsernameAvailability(editName, editEmail, currentUserId);
                   if (check.status === 'taken') {
                     return (
                       <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-[11px] text-rose-700 dark:text-rose-300 font-medium animate-fade-in">
                         <XCircle size={14} className="shrink-0 text-rose-600 dark:text-rose-400" />
-                        <span>Username Taken! ID <code className="font-mono">{check.targetUserId}</code> is owned by another user.</span>
+                        <span>Username/Email Taken! ID <code className="font-mono">{check.targetUserId}</code> or email belongs to another account.</span>
                       </div>
                     );
                   } else if (editName.trim().toLowerCase() !== (userProfile.name || '').toLowerCase()) {
@@ -581,6 +655,23 @@ export default function UserProfileModal({
                   }
                   return null;
                 })()}
+              </div>
+
+              {/* Email Input */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
               </div>
 
               {/* Bio Input */}

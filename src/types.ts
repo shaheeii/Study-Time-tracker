@@ -34,6 +34,7 @@ export interface Quote {
 
 export interface UserProfile {
   name: string;
+  email?: string;
   password?: string;
   avatarUrl: string;
   bio: string;
