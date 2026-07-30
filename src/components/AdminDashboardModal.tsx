@@ -33,7 +33,11 @@ import {
   Radio,
   Play,
   Pause,
-  Activity
+  Activity,
+  Mail,
+  Globe,
+  User,
+  Copy
 } from 'lucide-react';
 import { UserProfile, LoginLogEvent, StudySession } from '../types';
 import { formatSecondsToHMS } from '../utils';
@@ -66,8 +70,16 @@ export default function AdminDashboardModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingPasswordUserKey, setEditingPasswordUserKey] = useState<string | null>(null);
   const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [showPasswordsMap, setShowPasswordsMap] = useState<Record<string, boolean>>({});
   const [actionSuccessMessage, setActionSuccessMessage] = useState('');
   const [nowTicker, setNowTicker] = useState(Date.now());
+
+  const togglePasswordVisibility = (userKey: string) => {
+    setShowPasswordsMap((prev) => ({
+      ...prev,
+      [userKey]: !prev[userKey],
+    }));
+  };
 
   // Real-time 1-second ticker for live active study timers
   useEffect(() => {
@@ -102,19 +114,6 @@ export default function AdminDashboardModal({
       console.error('Failed to load users db:', e);
     }
 
-    // Ensure current user exists in database if logged in
-    const currentKey = 'user_' + (currentUser.name || 'guest').toLowerCase().replace(/[^a-z0-9]/g, '_');
-    if (!loadedUsers[currentKey] && currentUser.isLoggedIn && currentUser.name) {
-      loadedUsers[currentKey] = {
-        ...currentUser,
-        createdAt: currentUser.createdAt || new Date().toISOString(),
-        role: currentUser.role || (currentUser.name.toLowerCase() === 'admin' ? 'admin' : 'user'),
-      };
-      localStorage.setItem(dbKey, JSON.stringify(loadedUsers));
-    }
-
-    setUsersMap(loadedUsers);
-
     // 2. Load Login Logs
     const logsKey = 'focusflow_login_logs_v1';
     let loadedLogs: LoginLogEvent[] = [];
@@ -124,6 +123,71 @@ export default function AdminDashboardModal({
       console.error('Failed to load login logs:', e);
     }
     setLoginLogs(loadedLogs);
+
+    // 3. Auto-discover all outside/external users who logged in or created keys in localStorage
+    // a) From login logs:
+    loadedLogs.forEach((log) => {
+      if (log.username && log.username.trim().toLowerCase() !== 'guest') {
+        const userKey = log.userId || ('user_' + log.username.trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
+        if (!loadedUsers[userKey]) {
+          const isAdmin = log.username.toLowerCase() === 'admin' || log.username.toLowerCase() === 'shaheem';
+          loadedUsers[userKey] = {
+            name: log.username,
+            isLoggedIn: false,
+            role: isAdmin ? 'admin' : 'user',
+            avatarUrl: '/shaheem.png',
+            bio: 'Outside registered user',
+            createdAt: log.timestamp,
+            lastLoginAt: log.timestamp,
+            loginCount: 1,
+          };
+        } else {
+          const existing = loadedUsers[userKey];
+          if (!existing.lastLoginAt || new Date(log.timestamp) > new Date(existing.lastLoginAt)) {
+            existing.lastLoginAt = log.timestamp;
+          }
+        }
+      }
+    });
+
+    // b) From localStorage keys (sessions, user state, settings)
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('focusflow_sessions_v1_') || k.startsWith('focusflow_user_state_v1_') || k.startsWith('focusflow_settings_v1_'))) {
+          const userKey = k.replace(/^focusflow_(sessions_v1|user_state_v1|settings_v1)_/, '');
+          if (userKey && userKey !== 'guest' && !loadedUsers[userKey]) {
+            const rawName = userKey.replace(/^user_/, '').replace(/_/g, ' ');
+            const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+            const isAdmin = rawName.toLowerCase() === 'admin' || rawName.toLowerCase() === 'shaheem';
+            loadedUsers[userKey] = {
+              name: formattedName || 'Outside User',
+              isLoggedIn: false,
+              role: isAdmin ? 'admin' : 'user',
+              avatarUrl: '/shaheem.png',
+              bio: 'Outside registered user',
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString(),
+              loginCount: 1,
+            };
+          }
+        }
+      }
+    } catch (e) {}
+
+    // c) Ensure current user exists in database if logged in
+    const currentKey = 'user_' + (currentUser.name || 'guest').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (currentUser.isLoggedIn && currentUser.name) {
+      loadedUsers[currentKey] = {
+        ...loadedUsers[currentKey],
+        ...currentUser,
+        createdAt: currentUser.createdAt || loadedUsers[currentKey]?.createdAt || new Date().toISOString(),
+        role: currentUser.role || (currentUser.name.toLowerCase() === 'admin' || currentUser.name.toLowerCase() === 'shaheem' ? 'admin' : 'user'),
+      };
+    }
+
+    localStorage.setItem(dbKey, JSON.stringify(loadedUsers));
+    setUsersMap(loadedUsers);
   };
 
   const handleAdminAuthSubmit = (e: React.FormEvent) => {
@@ -140,10 +204,29 @@ export default function AdminDashboardModal({
     const isMasterPasscode = cleanPass === 'shaheemcode0880' || cleanPass === 'admin123' || cleanPass === 'shaheem';
     const isUserPasscode = currentUser.password && cleanPass === currentUser.password;
 
+    const currentKey = 'user_' + (currentUser.name || 'admin').toLowerCase().replace(/[^a-z0-9]/g, '_');
+
     if (isMasterPasscode || isUserPasscode) {
       setIsAdminAuthenticated(true);
       localStorage.setItem('focusflow_admin_auth_session', 'true');
       
+      // Import recordLoginEvent dynamically or log event in storage
+      const logsKey = 'focusflow_login_logs_v1';
+      try {
+        const logs: LoginLogEvent[] = JSON.parse(localStorage.getItem(logsKey) || '[]');
+        logs.unshift({
+          id: 'log_admin_' + Date.now(),
+          userId: currentKey,
+          username: currentUser.name || 'Admin',
+          timestamp: new Date().toISOString(),
+          ipAddress: '127.0.0.1 (Admin Session)',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Browser Client',
+          status: 'Success',
+          failureReason: 'Unlocked Admin Control Panel',
+        });
+        localStorage.setItem(logsKey, JSON.stringify(logs));
+      } catch (e) {}
+
       // Upgrade current profile role to admin if not already
       if (currentUser.role !== 'admin') {
         const updatedProfile: UserProfile = { ...currentUser, role: 'admin' };
@@ -152,6 +235,22 @@ export default function AdminDashboardModal({
       setPasscode('');
       loadAdminData();
     } else {
+      const logsKey = 'focusflow_login_logs_v1';
+      try {
+        const logs: LoginLogEvent[] = JSON.parse(localStorage.getItem(logsKey) || '[]');
+        logs.unshift({
+          id: 'log_admin_fail_' + Date.now(),
+          userId: currentKey,
+          username: currentUser.name || 'Visitor',
+          timestamp: new Date().toISOString(),
+          ipAddress: '127.0.0.1 (Admin Session)',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Browser Client',
+          status: 'Failed',
+          failureReason: 'Incorrect Admin Password',
+        });
+        localStorage.setItem(logsKey, JSON.stringify(logs));
+      } catch (e) {}
+
       setAuthError('Access Denied: Invalid Admin Password!');
     }
   };
@@ -387,7 +486,9 @@ export default function AdminDashboardModal({
       return (
         key.toLowerCase().includes(q) ||
         (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.role && u.role.toLowerCase().includes(q))
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.role && u.role.toLowerCase().includes(q)) ||
+        (u.password && u.password.toLowerCase().includes(q))
       );
     });
   }, [userList, searchQuery]);
@@ -399,7 +500,8 @@ export default function AdminDashboardModal({
       return (
         l.username.toLowerCase().includes(q) ||
         l.status.toLowerCase().includes(q) ||
-        (l.failureReason && l.failureReason.toLowerCase().includes(q))
+        (l.failureReason && l.failureReason.toLowerCase().includes(q)) ||
+        (l.ipAddress && l.ipAddress.toLowerCase().includes(q))
       );
     });
   }, [loginLogs, searchQuery]);
@@ -762,17 +864,35 @@ export default function AdminDashboardModal({
                               </div>
 
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                                     {user.name}
                                   </h4>
+                                  {user.role === 'admin' || user.name?.toLowerCase() === 'admin' ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-0.5">
+                                      <ShieldCheck size={10} />
+                                      Admin
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 flex items-center gap-0.5">
+                                      <Globe size={10} />
+                                      Outside User
+                                    </span>
+                                  )}
                                   {isCurrentAppUser && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                                       YOU
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[11px] font-mono text-slate-400 block">ID: {key}</span>
+                                {user.email ? (
+                                  <div className="flex items-center gap-1 text-[11px] font-mono text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                    <Mail size={11} className="shrink-0" />
+                                    <span className="truncate max-w-[150px]">{user.email}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] font-mono text-slate-400 block">ID: {key}</span>
+                                )}
                               </div>
                             </div>
 
@@ -840,8 +960,22 @@ export default function AdminDashboardModal({
 
                           {/* Footer Details */}
                           <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2 font-medium">
-                            <span>Role: <strong className="text-slate-700 dark:text-slate-300">{user.role || 'User'}</strong></span>
-                            <span>Total Logins: <strong className="text-slate-700 dark:text-slate-300">{user.loginCount || 1}</strong></span>
+                            <div className="flex items-center gap-1 font-mono">
+                              <span>Pass:</span>
+                              <strong className="text-slate-800 dark:text-slate-200 font-mono">
+                                {showPasswordsMap[key] ? (user.password || 'Set') : (user.password ? '••••••••' : 'Set')}
+                              </strong>
+                              {user.password && (
+                                <button
+                                  onClick={() => togglePasswordVisibility(key)}
+                                  className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer ml-1"
+                                  title={showPasswordsMap[key] ? 'Hide Password' : 'Show Password'}
+                                >
+                                  {showPasswordsMap[key] ? <EyeOff size={11} /> : <Eye size={11} />}
+                                </button>
+                              )}
+                            </div>
+                            <span>Logins: <strong className="text-slate-700 dark:text-slate-300">{user.loginCount || 1}</strong></span>
                           </div>
                         </div>
                       );
@@ -883,13 +1017,25 @@ export default function AdminDashboardModal({
                           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-700 dark:text-slate-300">
                             {filteredLogs.map((log) => {
                               const isSuccess = log.status === 'Success';
+                              const matchedUser = (Object.values(usersMap) as UserProfile[]).find(
+                                (u) => u.name && u.name.toLowerCase().trim() === log.username.toLowerCase().trim()
+                              );
+                              const userEmail = matchedUser?.email;
+
                               return (
                                 <tr key={log.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                                   <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold uppercase">
+                                    <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
                                       {log.username.charAt(0)}
                                     </div>
-                                    <span>{log.username}</span>
+                                    <div>
+                                      <span>{log.username}</span>
+                                      {userEmail && (
+                                        <span className="block text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-normal">
+                                          {userEmail}
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="px-4 py-3 font-mono text-slate-500 text-[11px]">
                                     {new Date(log.timestamp).toLocaleString(undefined, {
@@ -999,8 +1145,26 @@ export default function AdminDashboardModal({
                                 {user.name.charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <h5 className="font-bold text-slate-900 dark:text-slate-100">{user.name}</h5>
-                                <p className="text-[10px] text-slate-400 font-mono">ID: {key}</p>
+                                <div className="flex items-center gap-2">
+                                  <h5 className="font-bold text-slate-900 dark:text-slate-100">{user.name}</h5>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+                                      user.role === 'admin'
+                                        ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+                                        : 'bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800'
+                                    }`}
+                                  >
+                                    {user.role === 'admin' ? 'Admin' : 'Outside User'}
+                                  </span>
+                                </div>
+                                {user.email ? (
+                                  <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono flex items-center gap-1">
+                                    <Mail size={10} />
+                                    <span>{user.email}</span>
+                                  </p>
+                                ) : (
+                                  <p className="text-[10px] text-slate-400 font-mono">ID: {key}</p>
+                                )}
                               </div>
                             </div>
 
@@ -1008,8 +1172,8 @@ export default function AdminDashboardModal({
                               <span className="text-[10px] font-mono text-slate-500 block">
                                 Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Initial Session'}
                               </span>
-                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                                {user.role === 'admin' ? 'System Administrator' : 'Scholar Account'}
+                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                Logins: {user.loginCount || 1}
                               </span>
                             </div>
                           </div>
@@ -1066,21 +1230,29 @@ export default function AdminDashboardModal({
                                 )}
                               </div>
                               <div className="overflow-hidden">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                                     {user.name}
                                   </h4>
                                   <span
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${
                                       isAdmin
                                         ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                        : 'bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800'
                                     }`}
                                   >
-                                    {isAdmin ? 'Admin' : 'User'}
+                                    {isAdmin ? <ShieldCheck size={10} /> : <Globe size={10} />}
+                                    <span>{isAdmin ? 'Admin' : 'Outside User'}</span>
                                   </span>
                                 </div>
-                                <p className="text-[11px] font-mono text-slate-400 truncate">ID: {key}</p>
+                                {user.email ? (
+                                  <div className="flex items-center gap-1 text-[11px] font-mono text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                    <Mail size={11} className="shrink-0" />
+                                    <span className="truncate max-w-[160px]">{user.email}</span>
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] font-mono text-slate-400 truncate">ID: {key}</p>
+                                )}
                               </div>
                             </div>
 
@@ -1092,7 +1264,7 @@ export default function AdminDashboardModal({
                           </div>
 
                           <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 italic bg-slate-50/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                            "{user.bio || 'No bio specified.'}"
+                            "{user.bio || 'Outside registered user.'}"
                           </p>
 
                           {/* Stats Grid for this profile */}
@@ -1111,9 +1283,18 @@ export default function AdminDashboardModal({
                             </div>
                             <div>
                               <span className="text-[10px] text-slate-400 block font-semibold uppercase">Password</span>
-                              <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                {user.password ? `${user.password.length} chars` : 'Set'}
-                              </span>
+                              <div className="flex items-center justify-center gap-1 text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                <span>{showPasswordsMap[key] ? (user.password || 'None') : (user.password ? '••••••••' : 'Set')}</span>
+                                {user.password && (
+                                  <button
+                                    onClick={() => togglePasswordVisibility(key)}
+                                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                    title={showPasswordsMap[key] ? 'Hide' : 'Show'}
+                                  >
+                                    {showPasswordsMap[key] ? <EyeOff size={12} /> : <Eye size={12} />}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
 
