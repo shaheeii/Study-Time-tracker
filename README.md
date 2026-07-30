@@ -1,12 +1,18 @@
-# padikkanam | Study Tracker 🌿
+# padikkanam | Study Tracker 📚🌿
 
 > **Digital Silence & Flow State Productivity**
 
-FocusFlow is a minimalist, aesthetic, and distraction-free study and productivity dashboard designed to help you enter deep focus, track your sessions, and maintain daily momentum.
+**padikkanam | Study Tracker** is a minimalist, aesthetic, and distraction-free study and productivity dashboard designed to help you enter deep focus, track your study sessions, maintain daily streaks, and achieve flow state.
 
 ---
 
 ## ✨ Features
+
+### 🔐 Mandatory & Instant Login Prompt for Unauthenticated Visitors
+- **First-Visit Auto-Prompt**: Unauthenticated visitors are automatically greeted with a clean login modal upon opening the site.
+- **Strict Unique Username Enforcement**: Every username is strictly unique (1 username = 1 user account). Multiple emails or users cannot register under an existing username, preventing account collision and data crossover.
+- **Real-Time Availability Checker**: Instant feedback on username availability and registered user account detection during registration or profile updates.
+- **Strong Multi-User Data Isolation**: Every account gets strictly isolated storage. Your study sessions, timer progress, active topic, and custom settings are private and isolated per user profile.
 
 ### ⏱️ Zen Pomodoro & Custom Timers
 - **Classic Pomodoro**: Quick toggle between 25-minute deep focus sessions and short/long breaks.
@@ -20,20 +26,19 @@ Immerse yourself in background acoustics tailored for concentration:
 - 🔥 **Cozy Fireplace**
 - 📻 **Lo-Fi Chill Beats** & **Deep Focus Synth**
 - 🌙 **Night Crickets** & **White Noise**
-- *Includes independent volume controls and audio feedback chirps.*
+- *Includes independent volume controls and ambient audio chimes.*
 
 ### 🚀 Floating Mini-Timer (Picture-in-Picture)
 - **Always on Top**: Detach the timer into a floating Picture-in-Picture (PiP) window that stays visible while you browse other tabs or applications.
 - **Draggable & Resizable**: Customize the scale and position of the mini widget anywhere on your screen.
 
-### 👤 User Profile & Guest Mode
-- **Personalized Identity**: Log in with your name and secure password to unlock verified scholar badges.
-- **Strong Multi-User Data Isolation**: Every account gets strictly isolated storage. Your study sessions, timer progress, active topic, and custom settings are never merged or shared with other accounts or guest users on the same browser.
+### 👤 User Profile & Scholar Identity
+- **Personalized Identity**: Log in with your unique username, optional email address, and secure password to unlock verified scholar badges.
 - **Avatar Customization**: Choose from curated preset avatars or upload your own custom profile picture.
 - **Bio & Status Phrase**: Share your current focus goal or productivity mantra.
 
 ### 📊 Analytics, Streaks & Data Export
-- **Daily Streak Tracker**: Build healthy habits and track your consecutive study days.
+- **Daily Streak Tracker**: Build healthy study habits and track your consecutive study days.
 - **7-Day Activity Chart**: Visual bar charts and metric breakdowns showing your peak focus hours.
 - **Data Export**: Download your full session history anytime as **CSV** or **JSON** for offline backup or personal spreadsheets.
 
@@ -46,8 +51,8 @@ Make sure you have [Node.js](https://nodejs.org/) (version 18 or higher) and `np
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/focusflow.git
-cd focusflow
+git clone https://github.com/your-username/padikkanam-study-tracker.git
+cd padikkanam-study-tracker
 ```
 
 ### 2. Install Dependencies
@@ -72,17 +77,19 @@ The optimized bundle will be created in the `dist/` directory.
 
 ## 💡 How to Use
 
-1. **Set Your Intention**: Enter your study topic or current project name in the timer input box.
-2. **Choose an Atmosphere**: Click the sound menu at the top right of the timer card to select a relaxing background soundscape.
-3. **Start Focusing**: Click **Start** to begin your session. If you need to switch apps, click the **PiP widget icon** at the top right to keep the timer visible.
-4. **Review Progress**: Switch to the **Stats & Analytics** tab to view your daily study streaks, completed sessions, and export your records.
+1. **Log In or Register**: Enter your unique username and password in the initial prompt.
+2. **Set Your Intention**: Enter your study topic or current project name in the timer input box.
+3. **Choose an Atmosphere**: Click the sound menu at the top right of the timer card to select a relaxing background soundscape.
+4. **Start Focusing**: Click **Start** to begin your session. If you need to switch apps, click the **PiP widget icon** at the top right to keep the timer visible.
+5. **Review Progress**: Switch to the **Stats & Analytics** tab to view your daily study streaks, completed sessions, and export your records.
 
 ---
 
 ## 🔒 Privacy & Offline Storage
-FocusFlow is built as an **offline-first** application. All your session history, customized settings, running timer states, and user profile details are securely stored locally inside your browser's `localStorage`. Your data never leaves your device unless you explicitly export it.
+**padikkanam** is built as an **offline-first** application. All your session history, customized settings, running timer states, and user profile details are securely stored locally inside your browser's `localStorage`. Your data never leaves your device unless you explicitly export it.
 
 ---
 
 ## 📄 License & Copyright
 **Shaheem - All rights reserved 2026**
+
