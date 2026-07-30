@@ -152,7 +152,11 @@ export default function UserProfileModal({
 
       if (!res.ok) {
         setLoginError(data.error || 'Authentication failed');
-        recordLoginEvent(targetUserId, normalizedName, 'Failed', data.error || 'Incorrect password');
+        if (data.logs) {
+          localStorage.setItem('focusflow_login_logs_v1', JSON.stringify(data.logs));
+        } else {
+          recordLoginEvent(targetUserId, normalizedName, 'Failed', data.error || 'Incorrect password');
+        }
         return;
       }
 
@@ -160,8 +164,14 @@ export default function UserProfileModal({
         localStorage.setItem('focusflow_users_db_v1', JSON.stringify(data.users));
       }
 
+      if (data.logs) {
+        localStorage.setItem('focusflow_login_logs_v1', JSON.stringify(data.logs));
+      }
+
       if (data.user) {
-        recordLoginEvent(targetUserId, normalizedName, 'Success');
+        if (!data.logs) {
+          recordLoginEvent(targetUserId, normalizedName, 'Success');
+        }
         onUpdateProfile(data.user);
         setMode('view');
         onClose();
@@ -248,7 +258,7 @@ export default function UserProfileModal({
     onClose();
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditError('');
 
@@ -271,14 +281,38 @@ export default function UserProfileModal({
       return;
     }
 
+    const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const newUserId = 'user_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+    // Server-side check for username/email collision
+    try {
+      const res = await fetch('/api/users/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: cleanName,
+          email: cleanEmail || undefined,
+          currentUserId,
+        }),
+      });
+      if (res.ok) {
+        const checkData = await res.json();
+        if (checkData.nameTaken) {
+          setEditError(`The username "${cleanName}" is already taken by another user account.`);
+          return;
+        }
+        if (checkData.emailTaken) {
+          setEditError(`The email "${cleanEmail}" is already registered to another user account.`);
+          return;
+        }
+      }
+    } catch (e) {}
+
     const dbKey = 'focusflow_users_db_v1';
     let usersDb: Record<string, UserProfile> = {};
     try {
       usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
     } catch (e) {}
-
-    const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const newUserId = 'user_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
     // Check username conflict with other users
     const usernameTaken = Object.keys(usersDb).some((key) => {

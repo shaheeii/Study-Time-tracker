@@ -201,6 +201,16 @@ export default function App() {
 
     if (userProfile.isLoggedIn && userProfile.name) {
       const userKey = getUserId(userProfile);
+      const dbKey = 'focusflow_users_db_v1';
+      try {
+        const usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+        usersDb[userKey] = {
+          ...usersDb[userKey],
+          ...userProfile,
+        };
+        localStorage.setItem(dbKey, JSON.stringify(usersDb));
+      } catch (e) {}
+
       fetch('/api/users/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
