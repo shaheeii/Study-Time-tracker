@@ -326,6 +326,13 @@ export function recordLoginEvent(userId: string, username: string, status: 'Succ
     logs.unshift(newEvent);
     if (logs.length > 300) logs.length = 300;
     localStorage.setItem(logsKey, JSON.stringify(logs));
+
+    // Send asynchronously to backend server DB so Admin Portal catches outside users
+    fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, username, status, failureReason }),
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to log login event:', e);
   }

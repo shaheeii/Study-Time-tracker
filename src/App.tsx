@@ -175,10 +175,18 @@ export default function App() {
   });
   const [pipTrigger, setPipTrigger] = useState(0);
 
-  // Save sessions to isolated localStorage whenever they change
+  // Save sessions to isolated localStorage whenever they change & sync with backend server API
   useEffect(() => {
     const userId = getUserId(userProfile);
     localStorage.setItem(`focusflow_sessions_v1_${userId}`, JSON.stringify(sessions));
+
+    if (userId && userId !== 'guest') {
+      fetch('/api/sessions/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, sessions }),
+      }).catch(() => {});
+    }
   }, [sessions, userProfile]);
 
   // Save settings to isolated localStorage whenever they change

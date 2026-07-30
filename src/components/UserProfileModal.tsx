@@ -112,7 +112,7 @@ export default function UserProfileModal({
     };
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -136,6 +136,42 @@ export default function UserProfileModal({
     }
 
     const targetUserId = 'user_' + normalizedName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+    try {
+      const res = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: normalizedName,
+          email: normalizedEmail || undefined,
+          password: cleanPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setLoginError(data.error || 'Authentication failed');
+        recordLoginEvent(targetUserId, normalizedName, 'Failed', data.error || 'Incorrect password');
+        return;
+      }
+
+      if (data.users) {
+        localStorage.setItem('focusflow_users_db_v1', JSON.stringify(data.users));
+      }
+
+      if (data.user) {
+        recordLoginEvent(targetUserId, normalizedName, 'Success');
+        onUpdateProfile(data.user);
+        setMode('view');
+        onClose();
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend API offline, falling back to local storage authentication:', err);
+    }
+
+    // Fallback local authentication if server unavailable
     const dbKey = 'focusflow_users_db_v1';
     let usersDb: Record<string, UserProfile> = {};
     try {
@@ -199,7 +235,7 @@ export default function UserProfileModal({
         password: cleanPassword,
         isLoggedIn: true,
         avatarUrl: '/shaheem.png',
-        bio: 'Chasing digital silence and productivity.',
+        bio: 'Outside registered scholar.',
         role: isFirstAdmin ? 'admin' : 'user',
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
@@ -270,6 +306,16 @@ export default function UserProfileModal({
       }
     }
 
+    const updatedProfile: UserProfile = {
+      ...userProfile,
+      name: cleanName,
+      email: cleanEmail || undefined,
+      bio: editBio.trim(),
+      avatarUrl: editAvatarUrl,
+      password: cleanPassword,
+      isLoggedIn: true,
+    };
+
     if (newUserId !== currentUserId) {
       // Migrate existing user sessions, settings, and state so user data is never lost
       const oldSessions = localStorage.getItem(`focusflow_sessions_v1_${currentUserId}`);
@@ -295,15 +341,25 @@ export default function UserProfileModal({
       localStorage.setItem(dbKey, JSON.stringify(usersDb));
     }
 
-    onUpdateProfile({
-      ...userProfile,
-      name: cleanName,
-      email: cleanEmail || undefined,
-      bio: editBio.trim(),
-      avatarUrl: editAvatarUrl,
-      password: cleanPassword,
-      isLoggedIn: true,
-    });
+    // Post to backend server API
+    fetch('/api/users/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userKey: newUserId,
+        oldUserKey: currentUserId,
+        updatedProfile,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.users) {
+          localStorage.setItem(dbKey, JSON.stringify(data.users));
+        }
+      })
+      .catch(() => {});
+
+    onUpdateProfile(updatedProfile);
     setMode('view');
   };
 

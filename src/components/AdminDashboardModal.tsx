@@ -188,6 +188,26 @@ export default function AdminDashboardModal({
 
     localStorage.setItem(dbKey, JSON.stringify(loadedUsers));
     setUsersMap(loadedUsers);
+
+    // 4. Fetch real-time server database for all outside/external users
+    fetch('/api/admin/data')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          const serverUsers: Record<string, UserProfile> = data.users || {};
+          const serverLogs: LoginLogEvent[] = data.logs || [];
+
+          const mergedUsers = { ...loadedUsers, ...serverUsers };
+          setUsersMap(mergedUsers);
+          localStorage.setItem(dbKey, JSON.stringify(mergedUsers));
+
+          if (serverLogs.length > 0) {
+            setLoginLogs(serverLogs);
+            localStorage.setItem(logsKey, JSON.stringify(serverLogs));
+          }
+        }
+      })
+      .catch((e) => console.error('Error fetching backend admin data:', e));
   };
 
   const handleAdminAuthSubmit = (e: React.FormEvent) => {
@@ -271,6 +291,12 @@ export default function AdminDashboardModal({
     setUsersMap(updatedMap);
     localStorage.setItem('focusflow_users_db_v1', JSON.stringify(updatedMap));
 
+    fetch('/api/users/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userKey, updatedProfile: { role: newRole } }),
+    }).catch(() => {});
+
     // If updating current user's profile
     const currentKey = 'user_' + (currentUser.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
     if (userKey === currentKey) {
@@ -289,10 +315,17 @@ export default function AdminDashboardModal({
     const user = usersMap[userKey];
     if (!user) return;
 
-    const updatedUser = { ...user, password: newPasswordValue.trim() };
+    const newPass = newPasswordValue.trim();
+    const updatedUser = { ...user, password: newPass };
     const updatedMap = { ...usersMap, [userKey]: updatedUser };
     setUsersMap(updatedMap);
     localStorage.setItem('focusflow_users_db_v1', JSON.stringify(updatedMap));
+
+    fetch('/api/users/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userKey, newPassword: newPass }),
+    }).catch(() => {});
 
     setEditingPasswordUserKey(null);
     setNewPasswordValue('');
@@ -311,6 +344,12 @@ export default function AdminDashboardModal({
     delete updatedMap[userKey];
     setUsersMap(updatedMap);
     localStorage.setItem('focusflow_users_db_v1', JSON.stringify(updatedMap));
+
+    fetch('/api/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userKey }),
+    }).catch(() => {});
 
     // Remove user storage keys
     localStorage.removeItem(`focusflow_sessions_v1_${userKey}`);
