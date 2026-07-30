@@ -154,24 +154,24 @@ export default function UserProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
+        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
         id="user-profile-modal"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <User size={18} />
             </div>
-            <h3 className="font-sans text-base font-bold text-slate-900">
+            <h3 className="font-sans text-base font-bold text-slate-900 dark:text-slate-100">
               {mode === 'login' ? 'User Profile Login' : mode === 'edit' ? 'Edit Profile' : 'User Profile'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X size={18} />
           </button>
@@ -186,60 +186,60 @@ export default function UserProfileModal({
                 <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 mx-auto mb-3 flex items-center justify-center overflow-hidden">
                   <img src={userProfile.avatarUrl || '/shaheem.png'} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <h4 className="font-bold text-slate-800 text-lg">Welcome to FocusFlow</h4>
-                <p className="text-xs text-slate-500 mt-1">
+                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Welcome to FocusFlow</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Log in with your name and password to access your personalized focus dashboard.
                 </p>
               </div>
 
               {loginError && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-medium">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-medium">
                   <AlertCircle size={16} className="shrink-0" />
                   <span>{loginError}</span>
                 </div>
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   User Name
                 </label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={loginName}
                     onChange={(e) => setLoginName(e.target.value)}
                     placeholder="Enter your username..."
                     required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
                   <span>Password</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Low Secure Required</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Low Secure Required</span>
                 </label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Enter or create password..."
                     required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                   If this is your first time, the entered password will be set as your account password.
                 </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-2 py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-md hover:bg-primary-hover active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                className="w-full mt-2 py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-md hover:bg-primary-hover active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Shield size={16} />
                 <span>Log In / Access Profile</span>
@@ -251,40 +251,40 @@ export default function UserProfileModal({
           {mode === 'view' && (
             <div className="flex flex-col gap-6 items-center text-center">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50 flex items-center justify-center">
+                <div className="w-24 h-24 rounded-full border-4 border-slate-100 dark:border-slate-800 shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
                   <img src={userProfile.avatarUrl || '/shaheem.png'} alt={userProfile.name} className="w-full h-full object-cover" />
                 </div>
-                <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" title="Online & Focused"></span>
+                <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" title="Online & Focused"></span>
               </div>
 
               <div className="flex flex-col gap-1">
-                <h4 className="text-xl font-bold text-slate-900 flex items-center justify-center gap-1.5">
+                <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1.5">
                   <span>{userProfile.name}</span>
                   <Sparkles size={16} className="text-amber-500 fill-amber-500" />
                 </h4>
-                <p className="text-xs text-slate-500 max-w-[280px] leading-relaxed mx-auto">
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] leading-relaxed mx-auto">
                   {userProfile.bio || 'Chasing digital silence and productivity.'}
                 </p>
               </div>
 
-              <div className="w-full grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100/80 text-left">
+              <div className="w-full grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100/80 dark:border-slate-800 text-left">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
-                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Status</span>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
                     Logged In
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Security</span>
-                  <span className="text-xs font-bold text-slate-700 mt-0.5">Password Protected</span>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Security</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">Password Protected</span>
                 </div>
               </div>
 
               <div className="flex gap-3 w-full mt-2">
                 <button
                   onClick={() => setMode('edit')}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
                 >
                   <Edit3 size={15} />
                   <span>Edit Profile</span>
@@ -294,7 +294,7 @@ export default function UserProfileModal({
                     onLogout();
                     onClose();
                   }}
-                  className="py-2.5 px-4 rounded-xl border border-rose-100 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                  className="py-2.5 px-4 rounded-xl border border-rose-100 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <LogOut size={15} />
                   <span>Log Out</span>
@@ -309,7 +309,7 @@ export default function UserProfileModal({
               {/* Avatar Selector Section */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative group cursor-pointer" onClick={() => setShowAvatarPresets(!showAvatarPresets)}>
-                  <div className="w-20 h-20 rounded-full border-2 border-primary/30 overflow-hidden bg-slate-50 shadow-inner flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full border-2 border-primary/30 overflow-hidden bg-slate-50 dark:bg-slate-800 shadow-inner flex items-center justify-center">
                     <img src={editAvatarUrl} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -320,16 +320,16 @@ export default function UserProfileModal({
                   <button
                     type="button"
                     onClick={() => setShowAvatarPresets(!showAvatarPresets)}
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Smile size={14} />
                     <span>Choose Preset</span>
                   </button>
-                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-300 dark:text-slate-700">|</span>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1"
+                    className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer"
                   >
                     <Upload size={14} />
                     <span>Upload Photo</span>
@@ -345,8 +345,8 @@ export default function UserProfileModal({
 
                 {/* Preset Avatars Grid */}
                 {showAvatarPresets && (
-                  <div className="w-full bg-slate-50 p-3 rounded-2xl border border-slate-200 animate-in fade-in duration-150 flex flex-col gap-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Select Preset Avatar</span>
+                  <div className="w-full bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in duration-150 flex flex-col gap-2.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Select Preset Avatar</span>
                     <div className="grid grid-cols-4 gap-2">
                       {PRESET_AVATARS.map((url, i) => (
                         <button
@@ -356,8 +356,8 @@ export default function UserProfileModal({
                             setEditAvatarUrl(url);
                             setShowAvatarPresets(false);
                           }}
-                          className={`aspect-square rounded-xl overflow-hidden border-2 transition-all p-1 bg-white ${
-                            editAvatarUrl === url ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-slate-200 hover:border-slate-300'
+                          className={`aspect-square rounded-xl overflow-hidden border-2 transition-all p-1 bg-white dark:bg-slate-900 cursor-pointer ${
+                            editAvatarUrl === url ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                           }`}
                         >
                           <img src={url} alt="preset" className="w-full h-full object-cover rounded-lg" />
@@ -371,12 +371,12 @@ export default function UserProfileModal({
                         value={customImageUrl}
                         onChange={(e) => setCustomImageUrl(e.target.value)}
                         placeholder="Or paste image URL..."
-                        className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-primary"
+                        className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-primary"
                       />
                       <button
                         type="button"
                         onClick={handleApplyCustomUrl}
-                        className="px-2.5 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700"
+                        className="px-2.5 py-1.5 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-300 cursor-pointer"
                       >
                         Apply
                       </button>
@@ -387,7 +387,7 @@ export default function UserProfileModal({
 
               {/* Name Input */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Display Name
                 </label>
                 <input
@@ -396,13 +396,13 @@ export default function UserProfileModal({
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Your Name..."
                   required
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
               {/* Bio Input */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Bio / Status Phrase
                 </label>
                 <input
@@ -410,15 +410,15 @@ export default function UserProfileModal({
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   placeholder="E.g. Chasing digital silence..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
               {/* Password Input */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex justify-between">
                   <span>Password</span>
-                  <span className="text-[10px] font-normal text-slate-400">Required for access</span>
+                  <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">Required for access</span>
                 </label>
                 <input
                   type="password"
@@ -426,7 +426,7 @@ export default function UserProfileModal({
                   onChange={(e) => setEditPassword(e.target.value)}
                   placeholder="Set or update password..."
                   required
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
@@ -434,13 +434,13 @@ export default function UserProfileModal({
                 <button
                   type="button"
                   onClick={() => setMode('view')}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs transition-all"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-bold text-xs shadow-md hover:bg-primary-hover flex items-center justify-center gap-1.5 transition-all"
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-bold text-xs shadow-md hover:bg-primary-hover flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Check size={15} />
                   <span>Save Changes</span>

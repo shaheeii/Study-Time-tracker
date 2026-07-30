@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import TimerCard from './components/TimerCard';
 import StatsDashboard from './components/StatsDashboard';
@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   tickSoundEnabled: false,
   themeColor: 'blue',
+  themeMode: 'light',
 };
 
 const USER_PROFILE_KEY = 'focusflow_user_profile_v1';
@@ -118,7 +119,12 @@ export default function App() {
     const saved = localStorage.getItem(`focusflow_settings_v1_${initialUserId}`);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          themeMode: parsed.themeMode === 'dark' ? 'dark' : 'light',
+        };
       } catch (e) {
         console.error('Failed to parse settings, using defaults', e);
       }
@@ -129,7 +135,11 @@ export default function App() {
           const parsed = JSON.parse(legacy);
           localStorage.setItem(`focusflow_settings_v1_${initialUserId}`, legacy);
           localStorage.removeItem('focusflow_settings_v1');
-          return parsed;
+          return {
+            ...DEFAULT_SETTINGS,
+            ...parsed,
+            themeMode: parsed.themeMode === 'dark' ? 'dark' : 'light',
+          };
         } catch (e) {
           console.error('Failed to migrate legacy settings', e);
         }
@@ -207,7 +217,14 @@ export default function App() {
       let targetSettings: AppSettings = DEFAULT_SETTINGS;
       const savedSettings = localStorage.getItem(`focusflow_settings_v1_${newUserId}`);
       if (savedSettings) {
-        try { targetSettings = JSON.parse(savedSettings); } catch (e) {}
+        try { 
+          const parsed = JSON.parse(savedSettings);
+          targetSettings = {
+            ...DEFAULT_SETTINGS,
+            ...parsed,
+            themeMode: parsed.themeMode === 'dark' ? 'dark' : 'light',
+          };
+        } catch (e) {}
       }
 
       let targetState: SavedUserState | null = null;
@@ -286,15 +303,38 @@ export default function App() {
     localStorage.setItem(`${USER_STATE_KEY}_${userId}`, JSON.stringify(stateToSave));
   }, [activeMood, activeTopic, isTimerRunning, isTimerPaused, accumulatedSeconds, currentRunStartTime, activeTab, userProfile]);
 
+  // Ensure Web Audio context is initialized on first user gesture
+  useEffect(() => {
+    const handleGesture = () => {
+      sound.initCtx();
+    };
+    window.addEventListener('pointerdown', handleGesture, { once: true });
+    return () => window.removeEventListener('pointerdown', handleGesture);
+  }, []);
+
+  // Sync dark theme class on document element
+  useEffect(() => {
+    if (settings.themeMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.themeMode]);
+
+  const lastTickedSecondRef = useRef<number>(-1);
+
   // Central Timer Interval engine
   useEffect(() => {
     let intervalId: any = null;
     if (isTimerRunning && !isTimerPaused && currentRunStartTime !== null) {
       const updateTimerValue = () => {
         const elapsedSinceStart = Math.floor((Date.now() - currentRunStartTime) / 1000);
-        setActiveSeconds(accumulatedSeconds + elapsedSinceStart);
-        // Metronome tick sound if enabled
-        if (settings.tickSoundEnabled) {
+        const currentSec = accumulatedSeconds + elapsedSinceStart;
+        setActiveSeconds(currentSec);
+
+        // Metronome wood click sound if enabled - ONLY play once per second when second increments!
+        if (settings.tickSoundEnabled && currentSec !== lastTickedSecondRef.current) {
+          lastTickedSecondRef.current = currentSec;
           sound.playTick();
         }
       };
@@ -304,6 +344,8 @@ export default function App() {
       // Poll frequently (every 200ms) to bypass browser background tab throttling
       // while guaranteeing that the time is computed from the system clock
       intervalId = setInterval(updateTimerValue, 200);
+    } else {
+      lastTickedSecondRef.current = -1;
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -431,8 +473,13 @@ export default function App() {
     slate: '[--color-primary:#475569] [--color-primary-container:#64748b]',
   };
 
+  const toggleThemeMode = () => {
+    updateSettings({ themeMode: settings.themeMode === 'dark' ? 'light' : 'dark' });
+    sound.playChirp();
+  };
+
   return (
-    <div className={`min-h-screen bg-background text-slate-800 font-sans antialiased pb-20 md:pb-6 ${themeClasses[settings.themeColor]}`}>
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased pb-20 md:pb-6 transition-colors duration-300 ${themeClasses[settings.themeColor]}`}>
       
       {/* Responsive Header & Navigation rail */}
       <Navbar
@@ -441,6 +488,8 @@ export default function App() {
         openSettings={() => setIsSettingsOpen(true)}
         userProfile={userProfile}
         onOpenProfileModal={openProfileModal}
+        themeMode={settings.themeMode || 'light'}
+        onToggleThemeMode={toggleThemeMode}
       />
 
       {/* Main Container Stage */}
@@ -475,7 +524,7 @@ export default function App() {
         )}
 
         {/* Copyright Footer */}
-        <footer className="w-full pt-12 pb-4 mt-auto text-center text-xs font-medium text-slate-400">
+        <footer className="w-full pt-12 pb-4 mt-auto text-center text-xs font-medium text-slate-400 dark:text-slate-600 transition-colors">
           Shaheem - All right reserved 2026
         </footer>
       </main>

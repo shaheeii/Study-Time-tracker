@@ -499,9 +499,9 @@ export default function FloatingTimer({
             width: isMinimized ? `${widthMinimized}px` : `${widgetWidth}px`,
             height: isMinimized ? 'auto' : `${widgetHeight}px`,
           }}
-          className={`fixed z-50 rounded-2xl border bg-white/95 backdrop-blur-md transition-all duration-150 select-none overflow-y-auto overflow-x-hidden ${
+          className={`fixed z-50 rounded-2xl border bg-white/95 dark:bg-slate-900/95 dark:border-slate-800 backdrop-blur-md transition-all duration-150 select-none overflow-y-auto overflow-x-hidden ${
             isDragging 
-              ? `shadow-2xl cursor-grabbing border-slate-300 ring-2 ring-slate-100` 
+              ? `shadow-2xl cursor-grabbing border-slate-300 dark:border-slate-700 ring-2 ring-slate-100 dark:ring-slate-800` 
               : `shadow-[0_8px_30px_rgba(0,0,0,0.06)] cursor-grab ${currentTheme.border} ${currentTheme.glow}`
           } p-3.5`}
           id="floating-timer-widget"
@@ -509,13 +509,13 @@ export default function FloatingTimer({
         {isMinimized ? (
           /* Minimized Capsule Clock Layout */
           <div className="flex flex-col items-center justify-center gap-1.5 h-full">
-            <div className="flex items-center justify-between w-full text-slate-400">
-              <span className="cursor-move text-slate-300 hover:text-slate-500">
+            <div className="flex items-center justify-between w-full text-slate-400 dark:text-slate-500">
+              <span className="cursor-move text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400">
                 <Move size={11} />
               </span>
               <button
                 onClick={() => setIsMinimized(false)}
-                className="text-[9px] font-bold uppercase tracking-wide text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="text-[9px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
               >
                 Expand
               </button>
@@ -528,13 +528,13 @@ export default function FloatingTimer({
             <div className="flex gap-1.5 w-full mt-0.5">
               <button
                 onClick={isTimerPaused ? resumeTimer : pauseTimer}
-                className="flex-1 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-slate-600 flex justify-center items-center cursor-pointer"
+                className="flex-1 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex justify-center items-center cursor-pointer"
               >
                 {isTimerPaused ? <Play size={10} fill="currentColor" /> : <Pause size={10} />}
               </button>
               <button
                 onClick={stopAndSaveTimer}
-                className="flex-1 py-0.5 rounded-md bg-rose-50 border border-rose-100 text-rose-600 flex justify-center items-center cursor-pointer"
+                className="flex-1 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 flex justify-center items-center cursor-pointer"
               >
                 <Square size={8} fill="currentColor" className="stroke-none" />
               </button>
@@ -544,10 +544,10 @@ export default function FloatingTimer({
           /* Expanded Custom Sized Control Card */
           <div className="flex flex-col gap-2.5 h-full justify-between">
             {/* Header section with dragging grip, topic name, and preferences button */}
-            <div className="flex justify-between items-center pb-1.5 border-b border-slate-100 shrink-0">
+            <div className="flex justify-between items-center pb-1.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className={`w-1.5 h-1.5 rounded-full ${isTimerPaused ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500 animate-pulse'} shrink-0`} />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate max-w-[100px]">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate max-w-[100px]">
                   {activeTopic.trim() ? activeTopic : 'Focusing'}
                 </span>
               </div>
@@ -556,7 +556,7 @@ export default function FloatingTimer({
                 <button
                   onClick={() => setShowSettings(!showSettings)}
                   className={`p-1 rounded-md transition-all cursor-pointer ${
-                    showSettings ? 'text-primary bg-primary/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                    showSettings ? 'text-primary bg-primary/5 dark:bg-primary/20' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                   title="Adjust Height/Width Dimensions"
                 >
@@ -565,7 +565,7 @@ export default function FloatingTimer({
                 {/* Full clock maximize */}
                 <button
                   onClick={maximizeToTimerTab}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-all cursor-pointer"
+                  className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-all cursor-pointer"
                   title="Maximize Window"
                 >
                   <ExternalLink size={11} />
@@ -573,7 +573,7 @@ export default function FloatingTimer({
                 {/* Minimize back to capsule */}
                 <button
                   onClick={() => setIsMinimized(true)}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-all cursor-pointer"
+                  className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-all cursor-pointer"
                   title="Minimize Widget"
                 >
                   <Minimize2 size={11} />

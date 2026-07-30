@@ -155,17 +155,17 @@ export default function TimerCard({
       <section className="lg:col-span-8 flex flex-col gap-10">
         
         {/* Main Focus Timer Card */}
-        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col items-center gap-8 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col items-center gap-8 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
           {/* Subtle Ambient Glow behind Timer */}
-          <div className={`absolute -top-24 w-72 h-72 rounded-full blur-3xl opacity-[0.06] transition-all duration-700 pointer-events-none ${
-            isTimerRunning && !isTimerPaused ? 'bg-primary scale-125' : 'bg-slate-400'
+          <div className={`absolute -top-24 w-72 h-72 rounded-full blur-3xl opacity-[0.06] dark:opacity-[0.15] transition-all duration-700 pointer-events-none ${
+            isTimerRunning && !isTimerPaused ? 'bg-primary scale-125' : 'bg-slate-400 dark:bg-slate-600'
           }`} />
 
           {/* Topic Input Row */}
           <div className="w-full max-w-md flex flex-col gap-2 relative z-10">
             <label
               htmlFor="topic-input"
-              className="text-slate-400 font-sans text-xs font-semibold tracking-wide uppercase px-1"
+              className="text-slate-400 dark:text-slate-500 font-sans text-xs font-semibold tracking-wide uppercase px-1"
             >
               What are you studying?
             </label>
@@ -180,11 +180,11 @@ export default function TimerCard({
                   if (e.target.value.trim()) setTopicError(false);
                 }}
                 disabled={isTimerRunning}
-                className={`w-full bg-slate-50 border rounded-2xl px-5 py-4 text-slate-800 font-sans font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all duration-300 placeholder:text-slate-300 ${
+                className={`w-full bg-slate-50 dark:bg-slate-800/80 border rounded-2xl px-5 py-4 text-slate-800 dark:text-slate-100 font-sans font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800 transition-all duration-300 placeholder:text-slate-300 dark:placeholder:text-slate-600 ${
                   topicError
                     ? 'border-red-500 animate-shake bg-red-50/10'
-                    : 'border-slate-100 focus:border-primary'
-                } ${isTimerRunning ? 'opacity-70 cursor-not-allowed bg-slate-100/50' : ''}`}
+                    : 'border-slate-100 dark:border-slate-700/80 focus:border-primary'
+                } ${isTimerRunning ? 'opacity-70 cursor-not-allowed bg-slate-100/50 dark:bg-slate-800/40' : ''}`}
               />
               {topicError && (
                 <span className="text-red-500 text-xs font-semibold mt-1.5 absolute -bottom-5 left-1 animate-pulse">
@@ -200,13 +200,13 @@ export default function TimerCard({
               className={`font-mono text-7xl md:text-8xl tracking-tight leading-none transition-all duration-500 tabular-nums ${
                 isTimerRunning && !isTimerPaused
                   ? `${currentMoodConfig.textPrimary} font-semibold timer-active-glow`
-                  : 'text-slate-300 timer-glow'
+                  : 'text-slate-300 dark:text-slate-700 timer-glow'
               }`}
             >
               {formatSecondsToHMS(activeSeconds)}
             </span>
             {isTimerRunning && isTimerPaused && (
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-3.5 animate-pulse">
+              <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-3.5 animate-pulse">
                 Paused
               </span>
             )}
@@ -224,8 +224,8 @@ export default function TimerCard({
               disabled={activeSeconds === 0}
               className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-200 shrink-0 ${
                 activeSeconds > 0
-                  ? 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:scale-90 cursor-pointer'
-                  : 'bg-slate-50/50 border-slate-50 text-slate-200 cursor-not-allowed'
+                  ? 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-white active:scale-90 cursor-pointer'
+                  : 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-50 dark:border-slate-800 text-slate-200 dark:text-slate-700 cursor-not-allowed'
               }`}
               title="Reset Timer"
             >
@@ -237,18 +237,18 @@ export default function TimerCard({
               onClick={handleStartStop}
               className={`h-16 px-9 rounded-full font-semibold font-sans text-md flex items-center justify-center gap-3.5 shadow-lg shadow-primary/10 transition-all duration-300 active:scale-95 cursor-pointer ${
                 isTimerRunning
-                  ? 'bg-slate-900 text-white hover:bg-slate-800'
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200'
                   : 'bg-primary text-on-primary hover:bg-primary-container'
               }`}
             >
               {isTimerRunning ? (
                 <>
-                  <Square size={16} fill="white" className="stroke-none" />
+                  <Square size={16} fill="currentColor" className="stroke-none" />
                   <span>End Session</span>
                 </>
               ) : (
                 <>
-                  <Play size={16} fill="white" className="stroke-none" />
+                  <Play size={16} fill="currentColor" className="stroke-none" />
                   <span>Start Session</span>
                 </>
               )}
@@ -258,7 +258,7 @@ export default function TimerCard({
             {isTimerRunning && (
               <button
                 onClick={isTimerPaused ? resumeTimer : pauseTimer}
-                className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 active:scale-90 shrink-0 cursor-pointer"
+                className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-white transition-all duration-200 active:scale-90 shrink-0 cursor-pointer"
                 title={isTimerPaused ? 'Resume Session' : 'Pause Session'}
               >
                 {isTimerPaused ? <Play size={18} fill="currentColor" /> : <Pause size={18} />}
@@ -270,10 +270,10 @@ export default function TimerCard({
         {/* History Section */}
         <div className="flex flex-col gap-6">
           <div className="flex justify-between items-end px-2">
-            <h2 className="font-sans text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <h2 className="font-sans text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
               Recent Sessions
               {sessions.length > 0 && (
-                <span className="text-xs font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-mono">
+                <span className="text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full font-mono">
                   {sessions.length}
                 </span>
               )}
@@ -289,8 +289,8 @@ export default function TimerCard({
 
           <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
             {sessions.length === 0 ? (
-              <div className="text-slate-400 font-sans text-sm italic py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
-                <BookOpen size={24} className="text-slate-300 stroke-[1.5px]" />
+              <div className="text-slate-400 dark:text-slate-500 font-sans text-sm italic py-12 text-center bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-3">
+                <BookOpen size={24} className="text-slate-300 dark:text-slate-600 stroke-[1.5px]" />
                 <span>Your study history will appear here...</span>
               </div>
             ) : (
@@ -303,18 +303,18 @@ export default function TimerCard({
                 return (
                   <div
                     key={s.id}
-                    className="bg-white p-4.5 rounded-2xl border border-slate-100/80 flex justify-between items-center group transition-all duration-200 hover:border-slate-200 hover:shadow-md hover:shadow-slate-100/40"
+                    className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-100/80 dark:border-slate-800 flex justify-between items-center group transition-all duration-200 hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-md"
                   >
                     <div className="flex flex-col gap-1.5 min-w-0 pr-4">
-                      <span className="font-sans font-bold text-sm text-slate-800 truncate">
+                      <span className="font-sans font-bold text-sm text-slate-800 dark:text-slate-100 truncate">
                         {s.topic}
                       </span>
-                      <span className="font-sans text-[11px] font-medium text-slate-400 uppercase tracking-wide">
+                      <span className="font-sans text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                         {dateStr} • {timeStr}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-mono text-xs text-primary font-semibold bg-primary/5 px-3 py-1.5 rounded-full border border-primary/5">
+                      <span className="font-mono text-xs text-primary font-semibold bg-primary/5 dark:bg-primary/20 px-3 py-1.5 rounded-full border border-primary/5">
                         {durMin || '< 1'}m
                       </span>
                       <button
@@ -323,7 +323,7 @@ export default function TimerCard({
                             deleteSession(s.id);
                           }
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 p-1.5 rounded-lg transition-all duration-200 cursor-pointer"
                         title="Delete Session"
                       >
                         <Trash2 size={15} />
@@ -341,7 +341,7 @@ export default function TimerCard({
       <aside className="lg:col-span-4 flex flex-col gap-6 w-full">
         
         {/* Dynamic Atmosphere Mood Selector Widget */}
-        <div className={`relative h-56 rounded-3xl overflow-hidden shadow-sm group border border-slate-100/50 bg-gradient-to-br ${currentMoodConfig.bgGradient} transition-all duration-700 p-6 flex flex-col justify-between`}>
+        <div className={`relative h-56 rounded-3xl overflow-hidden shadow-sm group border border-slate-100/50 dark:border-slate-800 bg-gradient-to-br ${currentMoodConfig.bgGradient} transition-all duration-700 p-6 flex flex-col justify-between`}>
           {/* Subtle moving particles/glow */}
           <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/20 opacity-30 pointer-events-none" />
           
@@ -386,41 +386,41 @@ export default function TimerCard({
         </div>
 
         {/* Dynamic Stats Card: Today's Study Time */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:scale-[1.01] hover:border-slate-200 flex flex-col gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:scale-[1.01] flex flex-col gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/5">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary border border-primary/5">
               <Clock size={18} className="stroke-[2.2px]" />
             </div>
             <div className="flex flex-col">
-              <span className="font-sans text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+              <span className="font-sans text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none">
                 Today's Focus
               </span>
-              <span className="font-sans text-[10px] text-slate-300 font-medium mt-1">
+              <span className="font-sans text-[10px] text-slate-300 dark:text-slate-600 font-medium mt-1">
                 Target: 1 hr
               </span>
             </div>
           </div>
           <div className="flex items-baseline gap-2.5 mt-1.5">
-            <span className="font-mono text-3xl font-bold text-slate-800">
+            <span className="font-mono text-3xl font-bold text-slate-800 dark:text-slate-100">
               {formatSecondsToHM(todaySeconds)}
             </span>
-            <span className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-full border border-primary/5">
+            <span className="text-[11px] font-bold text-primary bg-primary/5 dark:bg-primary/20 px-2.5 py-1 rounded-full border border-primary/5">
               {percentageComparison}
             </span>
           </div>
         </div>
 
         {/* Dynamic Stats Card: Streak Tracker */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:scale-[1.01] hover:border-slate-200 flex flex-col gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:scale-[1.01] flex flex-col gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/5">
+            <div className="w-10 h-10 rounded-xl bg-secondary/10 dark:bg-secondary/20 flex items-center justify-center text-secondary border border-secondary/5">
               <Flame size={18} fill="currentColor" className="stroke-none" />
             </div>
             <div className="flex flex-col">
-              <span className="font-sans text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+              <span className="font-sans text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none">
                 Daily Streak
               </span>
-              <span className="font-sans text-[10px] text-slate-300 font-medium mt-1">
+              <span className="font-sans text-[10px] text-slate-300 dark:text-slate-600 font-medium mt-1">
                 Keep the flame alive
               </span>
             </div>
@@ -429,18 +429,18 @@ export default function TimerCard({
             <span className="font-mono text-3xl font-bold text-secondary">
               {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'Day' : 'Days'}
             </span>
-            <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-slate-100 dark:border-slate-700">
               Personal Best: {streakInfo.longestStreak}
             </span>
           </div>
         </div>
 
         {/* Inspirative Tip Card */}
-        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6 flex flex-col gap-3 transition-colors duration-300">
+        <div className="bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 rounded-2xl p-6 flex flex-col gap-3 transition-colors duration-300">
           <p className="font-sans text-xs font-semibold text-primary uppercase tracking-wider">
             Daily Study Tip
           </p>
-          <p className="font-sans text-sm text-slate-600 leading-relaxed italic">
+          <p className="font-sans text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
             "{isTimerRunning ? currentMoodConfig.quote : RANDOM_QUOTES[quoteIndex].text}"
           </p>
           <p className="font-sans text-[11px] font-bold text-primary mt-1">

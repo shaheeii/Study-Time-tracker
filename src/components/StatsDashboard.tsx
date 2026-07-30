@@ -84,23 +84,23 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
     <div className="flex flex-col gap-10 w-full max-w-[1100px] mx-auto pb-16">
       {/* Header section */}
       <section className="flex flex-col gap-2">
-        <h2 className="font-sans text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+        <h2 className="font-sans text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
           Stats & Insights
         </h2>
-        <p className="font-sans text-sm text-slate-400">
+        <p className="font-sans text-sm text-slate-400 dark:text-slate-500">
           Your progress towards digital clarity.
         </p>
       </section>
 
       {/* User Profile Overview Card - Minimal Look */}
-      <section className="bg-white rounded-3xl p-5 md:p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
+      <section className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
         <div className="flex items-center gap-4">
           <div
             className="relative group cursor-pointer shrink-0"
             onClick={() => onOpenProfileModal('edit')}
             title="Click to edit avatar"
           >
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
               <img
                 src={userProfile.avatarUrl || '/shaheem.png'}
                 alt={userProfile.name}
@@ -111,30 +111,30 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
               <Camera size={14} className="text-white" />
             </div>
             {userProfile.isLoggedIn && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" title="Logged In"></span>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" title="Logged In"></span>
             )}
           </div>
 
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h3 className="font-sans text-base md:text-lg font-bold text-slate-900 tracking-tight">
+              <h3 className="font-sans text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 {userProfile.name || 'Focus Scholar'}
               </h3>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${userProfile.isLoggedIn ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${userProfile.isLoggedIn ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                 {userProfile.isLoggedIn ? 'Verified' : 'Guest'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 line-clamp-1 max-w-sm mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 max-w-sm mt-0.5">
               {userProfile.bio || 'Chasing digital silence and productivity.'}
             </p>
           </div>
         </div>
 
         {/* Minimal Action Buttons */}
-        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-slate-100">
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800">
           <button
             onClick={() => onOpenProfileModal('edit')}
-            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
             <Edit3 size={13} />
             <span>Edit</span>
@@ -142,7 +142,7 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
           {!userProfile.isLoggedIn ? (
             <button
               onClick={() => onOpenProfileModal('login')}
-              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
             >
               <User size={13} />
               <span>Log In</span>
@@ -150,7 +150,7 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
           ) : (
             <button
               onClick={() => onOpenProfileModal('view')}
-              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 hover:text-slate-900 transition-all"
+              className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
               title="Account Details"
             >
               <User size={14} />
@@ -162,51 +162,51 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
       {/* Bento Summary Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* All-Time Study Hours Card */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-none">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
+          <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none">
             All-Time Study Hours
           </span>
           <div className="flex items-baseline gap-1.5 my-3">
             <span className="font-mono text-5xl font-bold text-primary tracking-tight">
               {totalHours}
             </span>
-            <span className="font-sans text-slate-400 text-sm font-semibold">hrs</span>
+            <span className="font-sans text-slate-400 dark:text-slate-500 text-sm font-semibold">hrs</span>
           </div>
-          <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-semibold bg-emerald-50/50 border border-emerald-100/55 px-3 py-1.5 rounded-full w-fit">
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-semibold bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100/55 dark:border-emerald-900/30 px-3 py-1.5 rounded-full w-fit">
             <TrendingUp size={14} />
             <span>+12% from last month</span>
           </div>
         </div>
 
         {/* Sessions Completed Card */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-none">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
+          <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none">
             Total Sessions
           </span>
           <div className="flex items-baseline gap-1.5 my-3">
-            <span className="font-mono text-5xl font-bold text-slate-800 tracking-tight">
+            <span className="font-mono text-5xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
               {totalCompletedSessionsCount}
             </span>
-            <span className="font-sans text-slate-400 text-sm font-semibold">sessions</span>
+            <span className="font-sans text-slate-400 dark:text-slate-500 text-sm font-semibold">sessions</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
-            <Calendar size={14} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 px-3 py-1.5 rounded-full w-fit">
+            <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
             <span>{avgSessionsPerDay || '0'} daily average</span>
           </div>
         </div>
 
         {/* Longest Streak Card */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] border-l-4 border-l-secondary flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-none">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] border-l-4 border-l-secondary flex flex-col justify-between h-48 transition-all duration-300 hover:shadow-[0_8px_35px_rgba(0,0,0,0.03)] hover:scale-[1.01]">
+          <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none">
             Longest Streak
           </span>
           <div className="flex items-baseline gap-1.5 my-3">
             <span className="font-mono text-5xl font-bold text-secondary tracking-tight">
               {streakInfo.longestStreak}
             </span>
-            <span className="font-sans text-slate-400 text-sm font-semibold">days</span>
+            <span className="font-sans text-slate-400 dark:text-slate-500 text-sm font-semibold">days</span>
           </div>
-          <div className="flex items-center gap-1.5 text-secondary text-xs font-bold bg-secondary/5 border border-secondary/10 px-3 py-1.5 rounded-full w-fit">
+          <div className="flex items-center gap-1.5 text-secondary text-xs font-bold bg-secondary/5 dark:bg-secondary/20 border border-secondary/10 dark:border-secondary/30 px-3 py-1.5 rounded-full w-fit">
             <Flame size={14} fill="currentColor" className="stroke-none" />
             <span>Current: {streakInfo.currentStreak} days</span>
           </div>
@@ -216,12 +216,12 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
       {/* Visualizations Section */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Weekly Activity Custom Chart */}
-        <div className="lg:col-span-3 bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-[360px] relative group">
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-[360px] relative group">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-sans text-md font-bold text-slate-800">
+            <h3 className="font-sans text-md font-bold text-slate-800 dark:text-slate-100">
               Study Activity
             </h3>
-            <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">
               Last 7 Days
             </span>
           </div>
@@ -231,7 +231,7 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
             {weeklyActivity.map((bar, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar h-full justify-end relative">
                 {/* Micro Tooltip */}
-                <div className="absolute -top-10 opacity-0 group-hover/bar:opacity-100 transition-all duration-200 pointer-events-none bg-slate-900 text-white text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg shadow-md whitespace-nowrap z-20">
+                <div className="absolute -top-10 opacity-0 group-hover/bar:opacity-100 transition-all duration-200 pointer-events-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg shadow-md whitespace-nowrap z-20">
                   {formatSecondsToHM(bar.seconds)}
                 </div>
 
@@ -240,11 +240,11 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
                   className={`w-full rounded-t-xl transition-all duration-300 ease-out cursor-pointer ${
                     bar.seconds > 0
                       ? 'bg-primary hover:bg-primary-container hover:shadow-lg hover:shadow-primary/10'
-                      : 'bg-slate-100/70 hover:bg-slate-200'
+                      : 'bg-slate-100/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                   style={{ height: bar.height }}
                 />
-                <span className="font-sans text-[11px] font-bold text-slate-400 group-hover/bar:text-slate-800 group-hover/bar:font-extrabold transition-all duration-200 uppercase tracking-wide">
+                <span className="font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 group-hover/bar:text-slate-800 dark:group-hover/bar:text-slate-200 group-hover/bar:font-extrabold transition-all duration-200 uppercase tracking-wide">
                   {bar.day}
                 </span>
               </div>
@@ -253,8 +253,8 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
         </div>
 
         {/* Streak Milestones */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-[360px] relative">
-          <h3 className="font-sans text-md font-bold text-slate-800">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col justify-between h-[360px] relative">
+          <h3 className="font-sans text-md font-bold text-slate-800 dark:text-slate-100">
             Streak Milestones
           </h3>
 
@@ -262,18 +262,18 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
             {/* 10-Day Streak Progress */}
             <div className="relative">
               <div className="flex justify-between items-center mb-1.5">
-                <span className="font-sans text-xs font-semibold text-slate-700">10 Day Streak</span>
-                <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded">
+                <span className="font-sans text-xs font-semibold text-slate-700 dark:text-slate-300">10 Day Streak</span>
+                <span className="font-mono text-xs font-bold text-primary bg-primary/5 dark:bg-primary/20 px-2 py-0.5 rounded">
                   {Math.round(tenDayProgress)}%
                 </span>
               </div>
-              <div className="w-full h-2.5 bg-slate-50 border border-slate-100/50 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${tenDayProgress}%` }}
                 />
               </div>
-              <p className="mt-1.5 font-sans text-[11px] text-slate-400 font-medium">
+              <p className="mt-1.5 font-sans text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                 {streakInfo.currentStreak >= 10 
                   ? 'Goal achieved! 🔥' 
                   : `${10 - streakInfo.currentStreak} days to go`}
@@ -283,18 +283,18 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
             {/* 30-Day Streak Progress */}
             <div className={`relative ${streakInfo.currentStreak < 10 ? 'opacity-50' : ''}`}>
               <div className="flex justify-between items-center mb-1.5">
-                <span className="font-sans text-xs font-semibold text-slate-700">30 Day Streak</span>
-                <span className="font-mono text-xs font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded">
+                <span className="font-sans text-xs font-semibold text-slate-700 dark:text-slate-300">30 Day Streak</span>
+                <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded">
                   {Math.round(thirtyDayProgress)}%
                 </span>
               </div>
-              <div className="w-full h-2.5 bg-slate-50 border border-slate-100/50 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-slate-400 rounded-full transition-all duration-1000 ease-out"
+                  className="h-full bg-slate-400 dark:bg-slate-600 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${thirtyDayProgress}%` }}
                 />
               </div>
-              <p className="mt-1.5 font-sans text-[11px] text-slate-400 font-medium">
+              <p className="mt-1.5 font-sans text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                 {streakInfo.currentStreak >= 30 
                   ? 'Consistency Master unlocked! 🏆' 
                   : 'Unlock "Consistency Master" badge'}
@@ -302,15 +302,15 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
             </div>
           </div>
 
-          <div className="mt-4 pt-4.5 border-t border-slate-100 flex items-center gap-4.5">
-            <div className="w-12 h-12 rounded-2xl bg-secondary-fixed flex items-center justify-center text-secondary border border-secondary-fixed-dim/10 shrink-0">
+          <div className="mt-4 pt-4.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-4.5">
+            <div className="w-12 h-12 rounded-2xl bg-secondary-fixed dark:bg-amber-950/40 flex items-center justify-center text-secondary border border-secondary-fixed-dim/10 shrink-0">
               <Award size={22} className="stroke-[2px]" />
             </div>
             <div className="flex flex-col">
-              <h4 className="font-sans text-xs font-bold text-slate-800 leading-none">
+              <h4 className="font-sans text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">
                 Next Achievement
               </h4>
-              <p className="font-sans text-[11px] text-slate-400 mt-1.5 font-medium leading-none">
+              <p className="font-sans text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 font-medium leading-none">
                 {totalCompletedSessionsCount >= 50 
                   ? 'Zen Focus Master (50+ Sessions)' 
                   : `Zen Focus (50 sessions) • ${Math.max(50 - totalCompletedSessionsCount, 0)} left`}
@@ -321,13 +321,13 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
       </section>
 
       {/* Database Session Breakdown */}
-      <section className="bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
-        <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div className="flex flex-col gap-1.5">
-            <h3 className="font-sans text-md font-bold text-slate-800">
+            <h3 className="font-sans text-md font-bold text-slate-800 dark:text-slate-100">
               Session Breakdown
             </h3>
-            <p className="font-sans text-[11px] text-slate-400 font-medium uppercase tracking-wide">
+            <p className="font-sans text-[11px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wide">
               Detailed study database logs
             </p>
           </div>
@@ -335,19 +335,19 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
           <div className="flex items-center gap-3.5">
             {/* Elegant search box */}
             <div className="relative">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Search subjects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9.5 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white focus:border-primary transition-all duration-200 placeholder:text-slate-300 w-full md:w-56"
+                className="pl-9.5 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800 focus:border-primary transition-all duration-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 w-full md:w-56"
               />
             </div>
 
             <button
               onClick={handleDownloadCSV}
-              className="flex items-center gap-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:text-slate-800 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-white text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
             >
               <Download size={14} />
               <span>Export CSV</span>
@@ -357,32 +357,32 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
 
         <div className="overflow-x-auto no-scrollbar">
           {filteredSessions.length === 0 ? (
-            <div className="p-16 text-center text-slate-400 font-sans text-sm italic flex flex-col items-center justify-center gap-3.5">
-              <BookOpen size={28} className="text-slate-200 stroke-[1.5px]" />
+            <div className="p-16 text-center text-slate-400 dark:text-slate-500 font-sans text-sm italic flex flex-col items-center justify-center gap-3.5">
+              <BookOpen size={28} className="text-slate-200 dark:text-slate-700 stroke-[1.5px]" />
               <span>No study sessions found matching your search.</span>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-100">
-                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="bg-slate-50/70 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Topic
                   </th>
-                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Duration
                   </th>
-                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">
+                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">
                     Status
                   </th>
-                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">
+                  <th className="px-8 py-4 font-sans text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredSessions.slice(0, 15).map((s, idx) => {
                   const date = new Date(s.timestamp);
                   const formattedDate = date.toLocaleDateString([], {
@@ -394,7 +394,7 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
                   return (
                     <tr
                       key={s.id}
-                      className="hover:bg-slate-50/50 transition-colors duration-150 group/row"
+                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors duration-150 group/row"
                     >
                       <td className="px-8 py-5.5">
                         <div className="flex items-center gap-3">
@@ -407,19 +407,19 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
                                 : 'bg-slate-400'
                             }`}
                           />
-                          <span className="font-sans font-semibold text-sm text-slate-800">
+                          <span className="font-sans font-semibold text-sm text-slate-800 dark:text-slate-200">
                             {s.topic}
                           </span>
                         </div>
                       </td>
-                      <td className="px-8 py-5.5 font-mono text-xs text-slate-400">
+                      <td className="px-8 py-5.5 font-mono text-xs text-slate-400 dark:text-slate-500">
                         {formattedDate}
                       </td>
-                      <td className="px-8 py-5.5 font-mono text-xs text-slate-800 font-bold">
+                      <td className="px-8 py-5.5 font-mono text-xs text-slate-800 dark:text-slate-200 font-bold">
                         {formatSecondsToHMS(s.duration)}
                       </td>
                       <td className="px-8 py-5.5 text-right">
-                        <span className="px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full border border-primary/5 uppercase tracking-wide">
+                        <span className="px-3 py-1 bg-primary/5 dark:bg-primary/20 text-primary text-[10px] font-bold rounded-full border border-primary/5 uppercase tracking-wide">
                           Completed
                         </span>
                       </td>
@@ -430,7 +430,7 @@ export default function StatsDashboard({ sessions, streakInfo, deleteSession, us
                               deleteSession(s.id);
                             }
                           }}
-                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover/row:opacity-100 p-1 rounded transition-all duration-150 cursor-pointer"
+                          className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover/row:opacity-100 p-1 rounded transition-all duration-150 cursor-pointer"
                           title="Delete Log"
                         >
                           <Trash2 size={14} />

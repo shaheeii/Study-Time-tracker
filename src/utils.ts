@@ -198,12 +198,16 @@ export function generateInitialMockSessions(): StudySession[] {
 class SoundSynthesizer {
   private ctx: AudioContext | null = null;
 
-  private initCtx() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+  public initCtx() {
+    try {
+      if (!this.ctx) {
+        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      // ignore
     }
   }
 
@@ -260,15 +264,16 @@ class SoundSynthesizer {
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
+      // Clean woodblock/tick synth
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1000, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.04);
+      osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.03);
 
-      gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.035, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.035);
 
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.05);
+      osc.start(this.ctx.currentTime);
+      osc.stop(this.ctx.currentTime + 0.04);
     } catch (e) {
       // Squelch audio errors
     }

@@ -24,6 +24,7 @@ export interface AppSettings {
   soundEnabled: boolean;
   tickSoundEnabled: boolean;
   themeColor: 'blue' | 'indigo' | 'slate' | 'emerald';
+  themeMode?: 'light' | 'dark';
 }
 
 export interface Quote {
