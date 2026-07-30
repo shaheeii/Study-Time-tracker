@@ -29,9 +29,14 @@ import {
   Database,
   Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  Radio,
+  Play,
+  Pause,
+  Activity
 } from 'lucide-react';
 import { UserProfile, LoginLogEvent, StudySession } from '../types';
+import { formatSecondsToHMS } from '../utils';
 
 interface AdminDashboardModalProps {
   isOpen: boolean;
@@ -52,40 +57,40 @@ export default function AdminDashboardModal({
   const [authError, setAuthError] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
 
-  // Active Tab: 'logins' | 'growth' | 'profiles' | 'system'
-  const [activeTab, setActiveTab] = useState<'logins' | 'growth' | 'profiles' | 'system'>('logins');
+  // Active Tab: 'logins' | 'growth' | 'profiles' | 'live' | 'system'
+  const [activeTab, setActiveTab] = useState<'logins' | 'growth' | 'profiles' | 'live' | 'system'>('live');
 
-  // Data States
+  // Data States & Live Clock Ticker
   const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>({});
   const [loginLogs, setLoginLogs] = useState<LoginLogEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUserKey, setSelectedUserKey] = useState<string | null>(null);
   const [editingPasswordUserKey, setEditingPasswordUserKey] = useState<string | null>(null);
   const [newPasswordValue, setNewPasswordValue] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState('');
+  const [nowTicker, setNowTicker] = useState(Date.now());
 
-  // Check if current user is admin on mount or user profile change
+  // Real-time 1-second ticker for live active study timers
+  useEffect(() => {
+    if (!isOpen || !isAdminAuthenticated) return;
+    const interval = setInterval(() => {
+      setNowTicker(Date.now());
+      loadAdminData();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen, isAdminAuthenticated]);
+
+  // Check if admin session token exists on mount or modal toggle
   useEffect(() => {
     if (isOpen) {
-      const isUserAdmin =
-        currentUser.role === 'admin' ||
-        currentUser.name?.toLowerCase() === 'admin' ||
-        currentUser.name?.toLowerCase() === 'shaheem';
-
-      if (isUserAdmin) {
+      const adminToken = localStorage.getItem('focusflow_admin_auth_session');
+      if (adminToken === 'true') {
         setIsAdminAuthenticated(true);
       } else {
-        // Check if admin session token exists in localStorage
-        const adminToken = localStorage.getItem('focusflow_admin_auth_session');
-        if (adminToken === 'true') {
-          setIsAdminAuthenticated(true);
-        } else {
-          setIsAdminAuthenticated(false);
-        }
+        setIsAdminAuthenticated(false);
       }
       loadAdminData();
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen]);
 
   const loadAdminData = () => {
     // 1. Load Users Database
@@ -127,12 +132,12 @@ export default function AdminDashboardModal({
 
     const cleanPass = passcode.trim();
     if (!cleanPass) {
-      setAuthError('Please enter admin passcode or password.');
+      setAuthError('Please enter admin password.');
       return;
     }
 
-    // Passcode validation: 'admin123', 'admin', user's password, or 'shaheem'
-    const isMasterPasscode = cleanPass === 'admin123' || cleanPass === 'admin' || cleanPass === 'shaheem';
+    // Passcode validation: 'shaheemcode0880', 'admin123', 'admin', or current user's password
+    const isMasterPasscode = cleanPass === 'shaheemcode0880' || cleanPass === 'admin123' || cleanPass === 'shaheem';
     const isUserPasscode = currentUser.password && cleanPass === currentUser.password;
 
     if (isMasterPasscode || isUserPasscode) {
@@ -147,8 +152,13 @@ export default function AdminDashboardModal({
       setPasscode('');
       loadAdminData();
     } else {
-      setAuthError('Invalid Admin Passcode. Hint: Default is "admin123"');
+      setAuthError('Access Denied: Invalid Admin Password!');
     }
+  };
+
+  const handleLockPanel = () => {
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem('focusflow_admin_auth_session');
   };
 
   const handleToggleUserRole = (userKey: string) => {
@@ -308,8 +318,67 @@ export default function AdminDashboardModal({
     }, 4000);
   };
 
+  // Live Status Resolver for any User
+  const getUserLiveStatus = (userKey: string, user: UserProfile) => {
+    let savedState: any = null;
+    try {
+      savedState = JSON.parse(localStorage.getItem(`focusflow_user_state_v1_${userKey}`) || 'null');
+    } catch (e) {}
+
+    const isCurrentActiveUser = userKey === ('user_' + (currentUser.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_'));
+
+    if (savedState?.isTimerRunning) {
+      let currentSecs = savedState.accumulatedSeconds || 0;
+      if (savedState.currentRunStartTime && !savedState.isTimerPaused) {
+        currentSecs += Math.floor((nowTicker - savedState.currentRunStartTime) / 1000);
+      }
+      return {
+        statusType: 'studying' as const,
+        statusLabel: 'Studying Live',
+        topic: savedState.activeTopic || 'Deep Focus Session',
+        seconds: Math.max(0, currentSecs),
+        badgeBg: 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+        dotColor: 'bg-emerald-500 animate-pulse',
+      };
+    }
+
+    if (savedState?.isTimerPaused) {
+      return {
+        statusType: 'paused' as const,
+        statusLabel: 'Timer Paused',
+        topic: savedState.activeTopic || 'Focus Session',
+        seconds: savedState.accumulatedSeconds || 0,
+        badgeBg: 'bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+        dotColor: 'bg-amber-500',
+      };
+    }
+
+    const lastSeenTime = user.lastLoginAt ? new Date(user.lastLoginAt).getTime() : 0;
+    const isOnline = user.isLoggedIn || isCurrentActiveUser || (nowTicker - lastSeenTime < 15 * 60 * 1000);
+
+    if (isOnline) {
+      return {
+        statusType: 'online' as const,
+        statusLabel: 'Online & Idle',
+        topic: 'Dashboard Active',
+        seconds: 0,
+        badgeBg: 'bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        dotColor: 'bg-blue-500',
+      };
+    }
+
+    return {
+      statusType: 'offline' as const,
+      statusLabel: 'Offline',
+      topic: 'Inactive',
+      seconds: 0,
+      badgeBg: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+      dotColor: 'bg-slate-400',
+    };
+  };
+
   // Analytics Computations
-  const userList = useMemo(() => Object.entries(usersMap), [usersMap]);
+  const userList = useMemo(() => Object.entries(usersMap), [usersMap, nowTicker]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return userList;
@@ -342,6 +411,13 @@ export default function AdminDashboardModal({
     const successfulLogins = loginLogs.filter((l) => l.status === 'Success').length;
     const failedLogins = loginLogs.filter((l) => l.status === 'Failed').length;
 
+    // Count live active studying users
+    let liveStudyingCount = 0;
+    userList.forEach(([key, u]) => {
+      const st = getUserLiveStatus(key, u);
+      if (st.statusType === 'studying') liveStudyingCount++;
+    });
+
     // Calculate total study hours across all user profiles
     let grandTotalStudySeconds = 0;
     userList.forEach(([key]) => {
@@ -362,11 +438,12 @@ export default function AdminDashboardModal({
       totalLogins,
       successfulLogins,
       failedLogins,
+      liveStudyingCount,
       grandTotalStudyHours,
     };
-  }, [userList, loginLogs]);
+  }, [userList, loginLogs, nowTicker]);
 
-  // Growth Data Aggregation (by Creation Date)
+  // Growth Data Aggregation
   const growthTimeline = useMemo(() => {
     const dateCounts: Record<string, number> = {};
 
@@ -375,7 +452,6 @@ export default function AdminDashboardModal({
       dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
     });
 
-    // Sort by date ascending
     const sortedDates = Object.keys(dateCounts).sort();
     let cumulative = 0;
     return sortedDates.map((date) => {
@@ -391,8 +467,8 @@ export default function AdminDashboardModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/65 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] transition-all">
         
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
@@ -406,11 +482,11 @@ export default function AdminDashboardModal({
                   Admin Control Panel
                 </h2>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                  Protected System
+                  Password Protected
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Manage user profiles, track login activity & growth metrics
+                Live user sessions, audit stream, profile management & growth analytics
               </p>
             </div>
           </div>
@@ -418,11 +494,8 @@ export default function AdminDashboardModal({
           <div className="flex items-center gap-2">
             {isAdminAuthenticated && (
               <button
-                onClick={() => {
-                  setIsAdminAuthenticated(false);
-                  localStorage.removeItem('focusflow_admin_auth_session');
-                }}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+                onClick={handleLockPanel}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Lock Admin Panel"
               >
                 <Lock size={14} />
@@ -431,7 +504,7 @@ export default function AdminDashboardModal({
             )}
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -448,17 +521,17 @@ export default function AdminDashboardModal({
 
         {/* BODY CONTENT: AUTH GATE vs DASHBOARD */}
         {!isAdminAuthenticated ? (
-          /* ADMIN AUTHENTICATION GATE */
-          <div className="p-8 sm:p-12 flex flex-col items-center justify-center text-center max-w-md mx-auto my-8">
+          /* ADMIN AUTHENTICATION GATE (SHAHEEMCODE0880 REQUIREMENT) */
+          <div className="p-8 sm:p-12 flex flex-col items-center justify-center text-center max-w-md mx-auto my-6">
             <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 shadow-sm">
               <ShieldAlert size={32} className="stroke-[2px]" />
             </div>
             
             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-sans tracking-tight mb-2">
-              Admin Passcode Required
+              Admin Password Required
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-              This area is restricted strictly to administrators. Please authenticate with your Admin passcode or account master password to access system data.
+              This panel is protected for authorized administrators. Please enter the master password to unlock live user monitoring and system management tools.
             </p>
 
             <form onSubmit={handleAdminAuthSubmit} className="w-full flex flex-col gap-4">
@@ -470,9 +543,8 @@ export default function AdminDashboardModal({
               )}
 
               <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex justify-between">
-                  <span>Admin Key / Password</span>
-                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">Default: admin123</span>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  Admin Password
                 </label>
                 <div className="relative">
                   <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -480,7 +552,7 @@ export default function AdminDashboardModal({
                     type={showPasscode ? 'text' : 'password'}
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Enter admin passcode (e.g. admin123)..."
+                    placeholder="Enter admin password..."
                     required
                     className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
@@ -509,10 +581,22 @@ export default function AdminDashboardModal({
             
             {/* Navigation Bar Tabs & Search */}
             <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl w-full sm:w-auto">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
+                    activeTab === 'live'
+                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Activity size={15} className="text-emerald-500 animate-pulse" />
+                  <span>Live Status ({stats.totalUsers})</span>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('logins')}
-                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
                     activeTab === 'logins'
                       ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -524,7 +608,7 @@ export default function AdminDashboardModal({
 
                 <button
                   onClick={() => setActiveTab('growth')}
-                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
                     activeTab === 'growth'
                       ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -536,7 +620,7 @@ export default function AdminDashboardModal({
 
                 <button
                   onClick={() => setActiveTab('profiles')}
-                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
                     activeTab === 'profiles'
                       ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -548,7 +632,7 @@ export default function AdminDashboardModal({
 
                 <button
                   onClick={() => setActiveTab('system')}
-                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
                     activeTab === 'system'
                       ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -566,7 +650,7 @@ export default function AdminDashboardModal({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search user, log, or status..."
+                  placeholder="Search user, topic or status..."
                   className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
@@ -579,7 +663,7 @@ export default function AdminDashboardModal({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Users</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Accounts</span>
                     <Users size={16} className="text-indigo-500" />
                   </div>
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
@@ -592,20 +676,33 @@ export default function AdminDashboardModal({
 
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Logins</span>
-                    <LogIn size={16} className="text-emerald-500" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Live Studying</span>
+                    <Radio size={16} className="text-emerald-500 animate-pulse" />
                   </div>
-                  <span className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
-                    {stats.totalLogins}
+                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                    {stats.liveStudyingCount} Active
                   </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    {stats.successfulLogins} Success ({stats.failedLogins} Failed)
+                  <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-medium">
+                    Timer currently running
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Hours Studied</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Logins</span>
+                    <LogIn size={16} className="text-blue-500" />
+                  </div>
+                  <span className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
+                    {stats.totalLogins}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {stats.successfulLogins} Success / {stats.failedLogins} Failed
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Hours</span>
                     <Clock size={16} className="text-amber-500" />
                   </div>
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
@@ -615,22 +712,145 @@ export default function AdminDashboardModal({
                     Logged across all accounts
                   </span>
                 </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
-                    <span className="text-xs font-bold uppercase tracking-wider">Security Status</span>
-                    <ShieldCheck size={16} className="text-blue-500" />
-                  </div>
-                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono text-sm uppercase tracking-wide pt-1">
-                    Protected
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    8+ Char Password Rule Active
-                  </span>
-                </div>
               </div>
 
-              {/* TAB 1: LOGIN HISTORY FEED */}
+              {/* TAB 1: REAL-TIME LIVE USER MONITOR (REQUIREMENT) */}
+              {activeTab === 'live' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                        <Activity size={16} className="text-emerald-500 animate-pulse" />
+                        <span>Real-Time Live Users Status Monitor</span>
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800">
+                        Live Sync 1s
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {userList.length} Accounts Tracked
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredUsers.map(([key, user]) => {
+                      const liveStatus = getUserLiveStatus(key, user);
+                      const isCurrentAppUser = key === ('user_' + (currentUser.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_'));
+
+                      return (
+                        <div
+                          key={key}
+                          className={`p-5 rounded-2xl border transition-all flex flex-col justify-between gap-4 ${
+                            liveStatus.statusType === 'studying'
+                              ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 shadow-md shadow-emerald-500/5'
+                              : liveStatus.statusType === 'paused'
+                              ? 'bg-amber-50/30 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center">
+                                  {user.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="font-bold text-lg text-primary">{user.name.charAt(0)}</span>
+                                  )}
+                                </div>
+                                <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${liveStatus.dotColor}`} />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                    {user.name}
+                                  </h4>
+                                  {isCurrentAppUser && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                                      YOU
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[11px] font-mono text-slate-400 block">ID: {key}</span>
+                              </div>
+                            </div>
+
+                            {/* Live Status Badge */}
+                            <div className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${liveStatus.badgeBg}`}>
+                              <span className={`w-2 h-2 rounded-full ${liveStatus.dotColor}`} />
+                              <span>{liveStatus.statusLabel}</span>
+                            </div>
+                          </div>
+
+                          {/* Active Topic Banner / Live Timer */}
+                          {liveStatus.statusType === 'studying' && (
+                            <div className="p-3 rounded-xl bg-emerald-100/60 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Play size={14} className="text-emerald-600 dark:text-emerald-400 fill-emerald-600" />
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block">
+                                    Current Topic
+                                  </span>
+                                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                                    {liveStatus.topic}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="font-mono text-sm font-black text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                {formatSecondsToHMS(liveStatus.seconds)}
+                              </span>
+                            </div>
+                          )}
+
+                          {liveStatus.statusType === 'paused' && (
+                            <div className="p-3 rounded-xl bg-amber-100/60 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800/80 flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Pause size={14} className="text-amber-600 dark:text-amber-400" />
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-300 block">
+                                    Paused Topic
+                                  </span>
+                                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                                    {liveStatus.topic}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="font-mono text-sm font-black text-amber-700 dark:text-amber-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
+                                {formatSecondsToHMS(liveStatus.seconds)}
+                              </span>
+                            </div>
+                          )}
+
+                          {liveStatus.statusType === 'online' && (
+                            <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-700 dark:text-blue-300 flex items-center justify-between">
+                              <span>User currently browsing dashboard</span>
+                              <span className="text-[10px] font-mono">Ready to study</span>
+                            </div>
+                          )}
+
+                          {liveStatus.statusType === 'offline' && (
+                            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+                              <span>Last Seen:</span>
+                              <span className="font-mono text-[11px]">
+                                {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleTimeString() : 'Earlier session'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Footer Details */}
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2 font-medium">
+                            <span>Role: <strong className="text-slate-700 dark:text-slate-300">{user.role || 'User'}</strong></span>
+                            <span>Total Logins: <strong className="text-slate-700 dark:text-slate-300">{user.loginCount || 1}</strong></span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: LOGIN HISTORY FEED */}
               {activeTab === 'logins' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -713,7 +933,7 @@ export default function AdminDashboardModal({
                 </div>
               )}
 
-              {/* TAB 2: USERS GROWTH ANALYTICS */}
+              {/* TAB 3: USERS GROWTH ANALYTICS */}
               {activeTab === 'growth' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -744,7 +964,6 @@ export default function AdminDashboardModal({
                             const heightPercent = Math.max(15, (item.totalUsers / maxUsers) * 100);
                             return (
                               <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group relative">
-                                {/* Hover tooltip */}
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 bg-slate-900 text-white text-[10px] py-1 px-2 rounded font-mono pointer-events-none whitespace-nowrap z-10 shadow-lg">
                                   {item.date}: {item.totalUsers} total (+{item.newUsers} new)
                                 </div>
@@ -801,7 +1020,7 @@ export default function AdminDashboardModal({
                 </div>
               )}
 
-              {/* TAB 3: USER PROFILES DIRECTORY (ONLY FOR ADMINS) */}
+              {/* TAB 4: USER PROFILES DIRECTORY */}
               {activeTab === 'profiles' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -815,6 +1034,7 @@ export default function AdminDashboardModal({
                     {filteredUsers.map(([key, user]) => {
                       const isAdmin = user.role === 'admin' || user.name?.toLowerCase() === 'admin';
                       const isEditingPassword = editingPasswordUserKey === key;
+                      const liveStatus = getUserLiveStatus(key, user);
 
                       // Compute total study hours for user
                       let userStudySeconds = 0;
@@ -863,6 +1083,12 @@ export default function AdminDashboardModal({
                                 <p className="text-[11px] font-mono text-slate-400 truncate">ID: {key}</p>
                               </div>
                             </div>
+
+                            {/* Live Badge in card */}
+                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 ${liveStatus.badgeBg}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${liveStatus.dotColor}`} />
+                              <span>{liveStatus.statusLabel}</span>
+                            </span>
                           </div>
 
                           <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 italic bg-slate-50/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
@@ -959,7 +1185,7 @@ export default function AdminDashboardModal({
                 </div>
               )}
 
-              {/* TAB 4: SYSTEM TOOLS & DATABASE BACKUP */}
+              {/* TAB 5: SYSTEM TOOLS & DATABASE BACKUP */}
               {activeTab === 'system' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -974,36 +1200,36 @@ export default function AdminDashboardModal({
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
                           <Download size={18} />
-                          <h4>Export Admin JSON Database</h4>
+                          <span>Export Full JSON Database</span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Export complete user profiles, study logs, and login audit trails as a backup JSON file.
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          Download complete backup of registered users database, login audit stream, and study session logs as JSON.
                         </p>
                       </div>
                       <button
                         onClick={handleExportData}
                         className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Download size={14} />
-                        <span>Export Backup File</span>
+                        <Download size={15} />
+                        <span>Download JSON Backup</span>
                       </button>
                     </div>
 
                     <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
                           <Sparkles size={18} />
-                          <h4>Seed Demo Scholar Accounts</h4>
+                          <span>Seed Demo Scholars</span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Populate database with demo scholar profiles & study logs to evaluate growth charts.
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          Populate database with sample student accounts and completed study session logs for previewing multi-user stats.
                         </p>
                       </div>
                       <button
                         onClick={handleSeedDemoUsers}
-                        className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Sparkles size={14} />
+                        <Users size={15} />
                         <span>Seed Demo Profiles</span>
                       </button>
                     </div>
