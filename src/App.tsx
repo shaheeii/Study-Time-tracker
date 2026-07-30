@@ -14,7 +14,7 @@ import { StudySession, AtmosphereMood, AppSettings, StreakInfo, UserProfile } fr
 import { calculateStreak, generateInitialMockSessions, sound } from './utils';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  dailyTargetMinutes: 60,
+  dailyTargetMinutes: 480, // 8 hours by default
   soundEnabled: true,
   tickSoundEnabled: false,
   themeColor: 'blue',
