@@ -195,10 +195,37 @@ export default function App() {
     localStorage.setItem(`focusflow_settings_v1_${userId}`, JSON.stringify(settings));
   }, [settings, userProfile]);
 
-  // Save user profile whenever it changes
+  // Save user profile whenever it changes & sync with central backend database for Admin Portal
   useEffect(() => {
     localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+
+    if (userProfile.isLoggedIn && userProfile.name) {
+      const userKey = getUserId(userProfile);
+      fetch('/api/users/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userKey,
+          updatedProfile: userProfile,
+        }),
+      }).catch(() => {});
+    }
   }, [userProfile]);
+
+  // Load server-wide registered users on mount to keep local database updated
+  useEffect(() => {
+    fetch('/api/users')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.users) {
+          const dbKey = 'focusflow_users_db_v1';
+          const localUsers = JSON.parse(localStorage.getItem(dbKey) || '{}');
+          const merged = { ...localUsers, ...data.users };
+          localStorage.setItem(dbKey, JSON.stringify(merged));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const switchUser = (newProfile: UserProfile) => {
     const oldUserId = getUserId(userProfile);

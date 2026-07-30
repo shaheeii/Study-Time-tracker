@@ -91,7 +91,7 @@ export default function AdminDashboardModal({
     return () => clearInterval(interval);
   }, [isOpen, isAdminAuthenticated]);
 
-  // Check if admin session token exists on mount or modal toggle
+  // Check if admin session token exists on mount or modal toggle & poll for live user updates
   useEffect(() => {
     if (isOpen) {
       const adminToken = localStorage.getItem('focusflow_admin_auth_session');
@@ -101,6 +101,13 @@ export default function AdminDashboardModal({
         setIsAdminAuthenticated(false);
       }
       loadAdminData();
+
+      // Live polling every 3 seconds so outside users logging in on other devices/phones show up automatically
+      const liveInterval = setInterval(() => {
+        loadAdminData();
+      }, 3000);
+
+      return () => clearInterval(liveInterval);
     }
   }, [isOpen]);
 
