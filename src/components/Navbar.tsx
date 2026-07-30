@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Clock, BarChart2, Settings, User, Sun, Moon } from 'lucide-react';
+import { Clock, BarChart2, Settings, User, Sun, Moon, ShieldCheck } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface NavbarProps {
@@ -13,6 +13,7 @@ interface NavbarProps {
   openSettings: () => void;
   userProfile?: UserProfile;
   onOpenProfileModal?: (mode: 'login' | 'edit' | 'view') => void;
+  onOpenAdminDashboard?: () => void;
   themeMode?: 'light' | 'dark';
   onToggleThemeMode?: () => void;
 }
@@ -23,6 +24,7 @@ export default function Navbar({
   openSettings,
   userProfile,
   onOpenProfileModal,
+  onOpenAdminDashboard,
   themeMode = 'light',
   onToggleThemeMode,
 }: NavbarProps) {
@@ -30,7 +32,8 @@ export default function Navbar({
 
   const displayAvatar = userProfile?.avatarUrl || '/shaheem.png';
   const displayName = userProfile?.isLoggedIn ? userProfile.name : 'FocusFlow';
-  const displaySubtitle = userProfile?.isLoggedIn ? 'Focus Scholar' : 'Digital Silence';
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.name?.toLowerCase() === 'admin' || userProfile?.name?.toLowerCase() === 'shaheem';
+  const displaySubtitle = isAdmin ? 'System Admin' : userProfile?.isLoggedIn ? 'Focus Scholar' : 'Digital Silence';
 
   return (
     <>
@@ -105,6 +108,20 @@ export default function Navbar({
               />
               <span>Stats & Insights</span>
             </button>
+
+            {onOpenAdminDashboard && (
+              <button
+                onClick={onOpenAdminDashboard}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left font-medium text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 group border border-indigo-100 dark:border-indigo-900/40 mt-1"
+                title="Open Admin Dashboard"
+              >
+                <ShieldCheck
+                  size={18}
+                  className="transition-transform duration-200 group-hover:scale-105 stroke-[2px]"
+                />
+                <span className="font-bold">Admin Panel</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -167,6 +184,15 @@ export default function Navbar({
           </h1>
         </div>
         <div className="flex gap-1.5">
+          {onOpenAdminDashboard && (
+            <button
+              onClick={onOpenAdminDashboard}
+              className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 active:scale-95 transition-all duration-150 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+              title="Admin Dashboard"
+            >
+              <ShieldCheck size={18} className="stroke-[2px]" />
+            </button>
+          )}
           {onToggleThemeMode && (
             <button
               onClick={onToggleThemeMode}

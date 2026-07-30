@@ -10,6 +10,7 @@ import StatsDashboard from './components/StatsDashboard';
 import SettingsModal from './components/SettingsModal';
 import FloatingTimer from './components/FloatingTimer';
 import UserProfileModal from './components/UserProfileModal';
+import AdminDashboardModal from './components/AdminDashboardModal';
 import { StudySession, AtmosphereMood, AppSettings, StreakInfo, UserProfile } from './types';
 import { calculateStreak, generateInitialMockSessions, sound } from './utils';
 
@@ -150,6 +151,7 @@ export default function App() {
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileModalMode, setProfileModalMode] = useState<'login' | 'edit' | 'view'>('view');
+  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
   // Active Timer States (persisted across site close/reload per user)
   const [activeTopic, setActiveTopic] = useState(initialUserState?.activeTopic || '');
@@ -490,6 +492,7 @@ export default function App() {
         openSettings={() => setIsSettingsOpen(true)}
         userProfile={userProfile}
         onOpenProfileModal={openProfileModal}
+        onOpenAdminDashboard={() => setIsAdminDashboardOpen(true)}
         themeMode={settings.themeMode || 'light'}
         onToggleThemeMode={toggleThemeMode}
       />
@@ -549,6 +552,14 @@ export default function App() {
         onUpdateProfile={updateUserProfile}
         onLogout={handleLogout}
         initialMode={profileModalMode}
+      />
+
+      {/* Protected Admin Dashboard Modal */}
+      <AdminDashboardModal
+        isOpen={isAdminDashboardOpen}
+        onClose={() => setIsAdminDashboardOpen(false)}
+        currentUser={userProfile}
+        onUpdateCurrentUser={setUserProfile}
       />
 
       {/* Floating Mini-Timer Controller Capsule Widget */}

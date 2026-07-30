@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StudySession, StreakInfo } from './types';
+import { StudySession, StreakInfo, LoginLogEvent } from './types';
 
 // Convert seconds to HH:MM:SS
 export function formatSecondsToHMS(totalSeconds: number): string {
@@ -308,3 +308,25 @@ class SoundSynthesizer {
 }
 
 export const sound = new SoundSynthesizer();
+
+export function recordLoginEvent(userId: string, username: string, status: 'Success' | 'Failed', failureReason?: string) {
+  try {
+    const logsKey = 'focusflow_login_logs_v1';
+    const logs: LoginLogEvent[] = JSON.parse(localStorage.getItem(logsKey) || '[]');
+    const newEvent: LoginLogEvent = {
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      userId,
+      username,
+      timestamp: new Date().toISOString(),
+      ipAddress: '127.0.0.1 (Local Session)',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Browser Client',
+      status,
+      failureReason,
+    };
+    logs.unshift(newEvent);
+    if (logs.length > 300) logs.length = 300;
+    localStorage.setItem(logsKey, JSON.stringify(logs));
+  } catch (e) {
+    console.error('Failed to log login event:', e);
+  }
+}

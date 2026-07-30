@@ -38,4 +38,19 @@ export interface UserProfile {
   avatarUrl: string;
   bio: string;
   isLoggedIn: boolean;
+  role?: 'admin' | 'user';
+  createdAt?: string;
+  lastLoginAt?: string;
+  loginCount?: number;
+}
+
+export interface LoginLogEvent {
+  id: string;
+  userId: string;
+  username: string;
+  timestamp: string; // ISO String
+  ipAddress?: string;
+  userAgent?: string;
+  status: 'Success' | 'Failed';
+  failureReason?: string;
 }

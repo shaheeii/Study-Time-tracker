@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Lock, Camera, Upload, Check, X, LogOut, Edit3, Shield, Smile, AlertCircle, Sparkles } from 'lucide-react';
 import { UserProfile } from '../types';
+import { recordLoginEvent } from '../utils';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -107,23 +108,35 @@ export default function UserProfileModal({
       const existingUser = usersDb[matchedKey];
       // Account exists, verify password
       if (existingUser.password && existingUser.password !== cleanPassword) {
+        recordLoginEvent(matchedKey, normalizedName, 'Failed', 'Incorrect password');
         setLoginError(`Incorrect password for username "${normalizedName}".`);
         return;
       }
       // Password correct! Log in as existing user
-      onUpdateProfile({
+      recordLoginEvent(matchedKey, normalizedName, 'Success');
+      const updatedUser: UserProfile = {
         ...existingUser,
         isLoggedIn: true,
-      });
+        lastLoginAt: new Date().toISOString(),
+        loginCount: (existingUser.loginCount || 0) + 1,
+      };
+      onUpdateProfile(updatedUser);
     } else {
       // New user account creation
-      onUpdateProfile({
+      recordLoginEvent(targetUserId, normalizedName, 'Success');
+      const isFirstAdmin = normalizedName.toLowerCase() === 'admin' || normalizedName.toLowerCase() === 'shaheem';
+      const newUser: UserProfile = {
         name: normalizedName,
         password: cleanPassword,
         isLoggedIn: true,
         avatarUrl: '/shaheem.png',
         bio: 'Chasing digital silence and productivity.',
-      });
+        role: isFirstAdmin ? 'admin' : 'user',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        loginCount: 1,
+      };
+      onUpdateProfile(newUser);
     }
 
     setMode('view');
