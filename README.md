@@ -1,4 +1,4 @@
-# FocusFlow 🌿
+# padikkanam | Study Tracker 🌿
 
 > **Digital Silence & Flow State Productivity**
 
