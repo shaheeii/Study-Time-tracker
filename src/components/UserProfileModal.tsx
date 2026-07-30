@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Camera, Upload, Check, X, LogOut, Edit3, Shield, Smile, AlertCircle, Sparkles } from 'lucide-react';
+import { User, Lock, Camera, Upload, Check, X, LogOut, Edit3, Shield, Smile, AlertCircle, Sparkles, CheckCircle2, XCircle, UserCheck } from 'lucide-react';
 import { UserProfile } from '../types';
 import { recordLoginEvent } from '../utils';
 
@@ -68,6 +68,41 @@ export default function UserProfileModal({
   }, [isOpen, userProfile, initialMode]);
 
   if (!isOpen) return null;
+
+  // Real-time unique username & User ID availability checker
+  const checkUsernameAvailability = (nameInput: string, excludeKey?: string) => {
+    const clean = nameInput.trim();
+    if (!clean) return { status: 'empty' as const, targetUserId: '', message: '' };
+
+    const targetUserId = 'user_' + clean.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const dbKey = 'focusflow_users_db_v1';
+    let usersDb: Record<string, UserProfile> = {};
+    try {
+      usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+    } catch (e) {}
+
+    const matchedKey = Object.keys(usersDb).find((key) => {
+      if (excludeKey && key === excludeKey) return false;
+      if (key === targetUserId) return true;
+      const u = usersDb[key];
+      return Boolean(u.name && u.name.toLowerCase().trim() === clean.toLowerCase());
+    });
+
+    if (matchedKey) {
+      return {
+        status: 'taken' as const,
+        targetUserId: matchedKey,
+        existingUser: usersDb[matchedKey],
+        message: `Registered Account Found (ID: ${matchedKey})`,
+      };
+    }
+
+    return {
+      status: 'available' as const,
+      targetUserId,
+      message: `Username Available (ID: ${targetUserId})`,
+    };
+  };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,8 +327,11 @@ export default function UserProfileModal({
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  User Name
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span>User Name</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-normal">
+                    ID: {loginName.trim() ? 'user_' + loginName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_') : 'unique_id'}
+                  </span>
                 </label>
                 <div className="relative">
                   <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
@@ -306,6 +344,26 @@ export default function UserProfileModal({
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
+
+                {/* Real-time Username ID Availability Indicator */}
+                {loginName.trim().length > 0 && (() => {
+                  const check = checkUsernameAvailability(loginName);
+                  if (check.status === 'taken') {
+                    return (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium animate-fade-in">
+                        <CheckCircle2 size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>Registered Account Found! Enter password to log in.</span>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-[11px] text-indigo-700 dark:text-indigo-300 font-medium animate-fade-in">
+                        <Sparkles size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+                        <span>Username Available! New unique account will be registered.</span>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -487,8 +545,11 @@ export default function UserProfileModal({
 
               {/* Name Input */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Display Name
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span>Display Name</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-normal">
+                    ID: {editName.trim() ? 'user_' + editName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_') : 'unique_id'}
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -498,6 +559,28 @@ export default function UserProfileModal({
                   required
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
+
+                {/* Real-time username availability check in edit mode */}
+                {editName.trim().length > 0 && (() => {
+                  const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+                  const check = checkUsernameAvailability(editName, currentUserId);
+                  if (check.status === 'taken') {
+                    return (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-[11px] text-rose-700 dark:text-rose-300 font-medium animate-fade-in">
+                        <XCircle size={14} className="shrink-0 text-rose-600 dark:text-rose-400" />
+                        <span>Username Taken! ID <code className="font-mono">{check.targetUserId}</code> is owned by another user.</span>
+                      </div>
+                    );
+                  } else if (editName.trim().toLowerCase() !== (userProfile.name || '').toLowerCase()) {
+                    return (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium animate-fade-in">
+                        <CheckCircle2 size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>Username Available! New ID: <code className="font-mono">{check.targetUserId}</code>.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Bio Input */}
