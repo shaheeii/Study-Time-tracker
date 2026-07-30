@@ -125,31 +125,65 @@ export default function SettingsModal({
             </div>
           </div>
 
-          {/* Target Daily Minutes */}
-          <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-5">
+          {/* Target Daily Minutes / Hours */}
+          <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-5">
             <div className="flex justify-between items-center">
               <span className="font-sans text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 Daily Study Target
               </span>
               <span className="font-mono text-sm font-bold text-primary">
-                {settings.dailyTargetMinutes} mins
+                {settings.dailyTargetMinutes >= 60 
+                  ? `${(settings.dailyTargetMinutes / 60).toFixed(settings.dailyTargetMinutes % 60 === 0 ? 0 : 1)} hr` 
+                  : `${settings.dailyTargetMinutes} mins`}
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-1">
+                  ({settings.dailyTargetMinutes} mins)
+                </span>
               </span>
             </div>
+
+            {/* Quick Target Hours Presets */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: '2 hr', minutes: 120 },
+                { label: '4 hr', minutes: 240 },
+                { label: '8 hr', minutes: 480 },
+                { label: '10 hr', minutes: 600 },
+              ].map((preset) => {
+                const isActive = settings.dailyTargetMinutes === preset.minutes;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => updateSettings({ dailyTargetMinutes: preset.minutes })}
+                    className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                      isActive
+                        ? 'bg-primary text-white border-primary shadow-sm ring-2 ring-primary/20'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Fine-tune Range Slider */}
             <input
               type="range"
-              min="15"
-              max="240"
-              step="15"
+              min="30"
+              max="600"
+              step="30"
               value={settings.dailyTargetMinutes}
               onChange={(e) => updateSettings({ dailyTargetMinutes: parseInt(e.target.value) })}
-              className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary"
+              className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary mt-1"
             />
-            <div className="flex justify-between text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase mt-0.5">
-              <span>15m</span>
-              <span>1h</span>
+            <div className="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase mt-0.5">
+              <span>30m</span>
               <span>2h</span>
-              <span>3h</span>
               <span>4h</span>
+              <span>6h</span>
+              <span>8h</span>
+              <span>10h</span>
             </div>
           </div>
 

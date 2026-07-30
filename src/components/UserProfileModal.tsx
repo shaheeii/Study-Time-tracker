@@ -47,6 +47,7 @@ export default function UserProfileModal({
   const [editBio, setEditBio] = useState(userProfile.bio || '');
   const [editAvatarUrl, setEditAvatarUrl] = useState(userProfile.avatarUrl);
   const [editPassword, setEditPassword] = useState(userProfile.password || '');
+  const [editError, setEditError] = useState('');
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [showAvatarPresets, setShowAvatarPresets] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,10 +55,11 @@ export default function UserProfileModal({
   useEffect(() => {
     if (isOpen) {
       setMode(userProfile.isLoggedIn ? initialMode : 'login');
-      setLoginName(userProfile.name || 'Focus Scholar');
+      setLoginName(userProfile.isLoggedIn ? userProfile.name || '' : '');
       setLoginPassword('');
       setLoginError('');
-      setEditName(userProfile.name || 'Focus Scholar');
+      setEditError('');
+      setEditName(userProfile.name || '');
       setEditBio(userProfile.bio || 'Chasing digital silence and productivity.');
       setEditAvatarUrl(userProfile.avatarUrl || '/shaheem.png');
       setEditPassword(userProfile.password || '');
@@ -68,16 +70,25 @@ export default function UserProfileModal({
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginName.trim()) {
+    setLoginError('');
+
+    const normalizedName = loginName.trim();
+    if (!normalizedName) {
       setLoginError('Please enter a username.');
       return;
     }
-    if (!loginPassword.trim()) {
+
+    const cleanPassword = loginPassword.trim();
+    if (!cleanPassword) {
       setLoginError('Password is required.');
       return;
     }
 
-    const normalizedName = loginName.trim();
+    if (cleanPassword.length < 8) {
+      setLoginError('Password must be at least 8 characters long.');
+      return;
+    }
+
     const targetUserId = 'user_' + normalizedName.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const dbKey = 'focusflow_users_db_v1';
     let usersDb: Record<string, UserProfile> = {};
@@ -85,23 +96,30 @@ export default function UserProfileModal({
       usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
     } catch (e) {}
 
-    const existingUser = usersDb[targetUserId];
-    if (existingUser) {
-      // User account exists! Verify password!
-      if (existingUser.password && existingUser.password !== loginPassword.trim()) {
-        setLoginError('Incorrect password for this username.');
+    // Check if account already exists by key or case-insensitive name match
+    const matchedKey = Object.keys(usersDb).find((key) => {
+      if (key === targetUserId) return true;
+      const u = usersDb[key];
+      return Boolean(u.name && u.name.toLowerCase().trim() === normalizedName.toLowerCase());
+    });
+
+    if (matchedKey) {
+      const existingUser = usersDb[matchedKey];
+      // Account exists, verify password
+      if (existingUser.password && existingUser.password !== cleanPassword) {
+        setLoginError(`Incorrect password for username "${normalizedName}".`);
         return;
       }
-      // Password matches! Restore their saved profile cleanly without merging with current screen state
+      // Password correct! Log in as existing user
       onUpdateProfile({
         ...existingUser,
         isLoggedIn: true,
       });
     } else {
-      // New account registration
+      // New user account creation
       onUpdateProfile({
         name: normalizedName,
-        password: loginPassword.trim(),
+        password: cleanPassword,
         isLoggedIn: true,
         avatarUrl: '/shaheem.png',
         bio: 'Chasing digital silence and productivity.',
@@ -114,16 +132,77 @@ export default function UserProfileModal({
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editName.trim()) {
-      alert('Username cannot be empty.');
+    setEditError('');
+
+    const cleanName = editName.trim();
+    if (!cleanName) {
+      setEditError('Username cannot be empty.');
       return;
     }
+
+    const cleanPassword = editPassword.trim();
+    if (!cleanPassword) {
+      setEditError('Password is required.');
+      return;
+    }
+
+    if (cleanPassword.length < 8) {
+      setEditError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    const dbKey = 'focusflow_users_db_v1';
+    let usersDb: Record<string, UserProfile> = {};
+    try {
+      usersDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+    } catch (e) {}
+
+    const currentUserId = 'user_' + (userProfile.name || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const newUserId = 'user_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+    if (newUserId !== currentUserId) {
+      // Check if new username is already taken by another account
+      const isTaken = Object.keys(usersDb).some((key) => {
+        if (key === currentUserId) return false;
+        const u = usersDb[key];
+        return key === newUserId || Boolean(u.name && u.name.toLowerCase().trim() === cleanName.toLowerCase());
+      });
+
+      if (isTaken) {
+        setEditError(`The username "${cleanName}" is already taken. Please choose a different username.`);
+        return;
+      }
+
+      // Migrate existing user sessions, settings, and state so user data is never lost
+      const oldSessions = localStorage.getItem(`focusflow_sessions_v1_${currentUserId}`);
+      if (oldSessions) {
+        localStorage.setItem(`focusflow_sessions_v1_${newUserId}`, oldSessions);
+        localStorage.removeItem(`focusflow_sessions_v1_${currentUserId}`);
+      }
+
+      const oldSettings = localStorage.getItem(`focusflow_settings_v1_${currentUserId}`);
+      if (oldSettings) {
+        localStorage.setItem(`focusflow_settings_v1_${newUserId}`, oldSettings);
+        localStorage.removeItem(`focusflow_settings_v1_${currentUserId}`);
+      }
+
+      const oldState = localStorage.getItem(`focusflow_user_state_v1_${currentUserId}`);
+      if (oldState) {
+        localStorage.setItem(`focusflow_user_state_v1_${newUserId}`, oldState);
+        localStorage.removeItem(`focusflow_user_state_v1_${currentUserId}`);
+      }
+
+      // Delete old key in users db
+      delete usersDb[currentUserId];
+      localStorage.setItem(dbKey, JSON.stringify(usersDb));
+    }
+
     onUpdateProfile({
       ...userProfile,
-      name: editName.trim(),
+      name: cleanName,
       bio: editBio.trim(),
       avatarUrl: editAvatarUrl,
-      password: editPassword.trim() || userProfile.password,
+      password: cleanPassword,
       isLoggedIn: true,
     });
     setMode('view');
@@ -219,7 +298,7 @@ export default function UserProfileModal({
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
                   <span>Password</span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Low Secure Required</span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">Min. 8 characters</span>
                 </label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
@@ -227,13 +306,14 @@ export default function UserProfileModal({
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Enter or create password..."
+                    placeholder="Enter account password (min. 8 chars)..."
                     required
+                    minLength={8}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                  If this is your first time, the entered password will be set as your account password.
+                  Usernames are unique. If first time, an account will be created with your password.
                 </p>
               </div>
 
@@ -306,6 +386,13 @@ export default function UserProfileModal({
           {/* EDIT MODE */}
           {mode === 'edit' && (
             <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+              {editError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-medium">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
               {/* Avatar Selector Section */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative group cursor-pointer" onClick={() => setShowAvatarPresets(!showAvatarPresets)}>
@@ -416,16 +503,17 @@ export default function UserProfileModal({
 
               {/* Password Input */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex justify-between items-center">
                   <span>Password</span>
-                  <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">Required for access</span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">Min. 8 characters</span>
                 </label>
                 <input
                   type="password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder="Set or update password..."
+                  placeholder="Set or update password (min. 8 chars)..."
                   required
+                  minLength={8}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
