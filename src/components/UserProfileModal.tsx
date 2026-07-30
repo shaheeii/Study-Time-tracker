@@ -364,7 +364,7 @@ export default function UserProfileModal({
                 <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 mx-auto mb-3 flex items-center justify-center overflow-hidden">
                   <img src={userProfile.avatarUrl || '/shaheem.png'} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Welcome to FocusFlow</h4>
+                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Welcome to padikkanam</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Log in with your name and password to access your personalized focus dashboard.
                 </p>

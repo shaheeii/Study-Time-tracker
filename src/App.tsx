@@ -149,8 +149,10 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileModalMode, setProfileModalMode] = useState<'login' | 'edit' | 'view'>('view');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(() => !userProfile.isLoggedIn);
+  const [profileModalMode, setProfileModalMode] = useState<'login' | 'edit' | 'view'>(() =>
+    userProfile.isLoggedIn ? 'view' : 'login'
+  );
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
   // Active Timer States (persisted across site close/reload per user)
@@ -283,7 +285,17 @@ export default function App() {
       isLoggedIn: false,
     };
     switchUser(guestProfile);
+    setProfileModalMode('login');
+    setIsProfileModalOpen(true);
   };
+
+  // Automatically prompt unlogged-in users with login modal on site visit
+  useEffect(() => {
+    if (!userProfile.isLoggedIn) {
+      setProfileModalMode('login');
+      setIsProfileModalOpen(true);
+    }
+  }, [userProfile.isLoggedIn]);
 
   const openProfileModal = (mode: 'login' | 'edit' | 'view') => {
     setProfileModalMode(mode);

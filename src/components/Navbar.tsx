@@ -31,7 +31,7 @@ export default function Navbar({
   const [imgError, setImgError] = useState(false);
 
   const displayAvatar = userProfile?.avatarUrl || '/shaheem.png';
-  const displayName = userProfile?.isLoggedIn ? userProfile.name : 'FocusFlow';
+  const displayName = userProfile?.isLoggedIn ? userProfile.name : 'padikkanam';
   const isAdmin = userProfile?.role === 'admin' || userProfile?.name?.toLowerCase() === 'admin' || userProfile?.name?.toLowerCase() === 'shaheem';
   const displaySubtitle = isAdmin ? 'System Admin' : userProfile?.isLoggedIn ? 'Focus Scholar' : 'Digital Silence';
 
